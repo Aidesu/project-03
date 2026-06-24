@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+
+# Compiled output
+/dist
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Tests / coverage
+/coverage
+
+# Environment variables (keep out of version control)
+.env
+.env.*
+!.env.example
+
+# Prisma generated client (custom output, if any)
+/generated/prisma
+
+# OS / editor
+.DS_Store
+.idea
+*.iml
