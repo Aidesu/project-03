@@ -10,11 +10,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Sample model — replace or extend with your own.
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String?
+  passwordHash String // argon2id hash — never returned to clients
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions RefreshSession[]
+}
+
+// Refresh-token sessions: enables rotation, revocation and reuse/theft detection.
+model RefreshSession {
+  id        String    @id @default(uuid())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String // sha256 of the opaque refresh token — the raw token is never stored
+  familyId  String // rotation family; reusing a revoked token revokes the whole family
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
 }

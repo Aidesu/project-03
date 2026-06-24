@@ -1,0 +1,83 @@
+# Local development infrastructure for project-03.
+#
+# Brings up the data layer:
+#   - db    : PostgreSQL 16   (primary database, used by Prisma)
+#   - redis : Redis 7         (cache / sessions / job queue for reminders & follow-ups)
+#   - minio : MinIO (S3 API)  (object storage for attachments: CVs, cover letters, offer PDFs)
+#
+# Usage:
+#   cp .env.example .env      # then adjust the secrets
+#   docker compose up -d
+#   docker compose ps         # check health
+#
+# Secrets are read from a local .env (gitignored). Sensible DEV defaults are
+# provided via ${VAR:-default}, so the stack also runs without a .env — but
+# you MUST set strong secrets (and an encrypted volume/disk) before any
+# non-local deployment. See the "Security" note in the README.
+
+name: project-03
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: project03-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-project_03}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: project03-redis
+    restart: unless-stopped
+    # Password-protected + append-only file for persistence.
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-redis}"]
+    environment:
+      # Lets redis-cli (incl. the healthcheck) authenticate without exposing the password on the CLI.
+      REDISCLI_AUTH: ${REDIS_PASSWORD:-redis}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  minio:
+    image: minio/minio:latest
+    container_name: project03-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"        # S3 API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"    # Web console
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
