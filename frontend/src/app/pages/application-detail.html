@@ -1,0 +1,234 @@
+<div class="mx-auto max-w-4xl">
+  <a
+    routerLink="/applications"
+    class="text-sm font-medium text-slate-400 transition hover:text-slate-600"
+    >← Candidatures</a
+  >
+
+  @if (loading()) {
+    <div class="mt-4 h-64 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+  } @else if (error()) {
+    <div
+      class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700"
+    >
+      Candidature introuvable.
+    </div>
+  } @else if (detail(); as d) {
+    <!-- Header -->
+    <header class="mt-3 flex flex-wrap items-start justify-between gap-4">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+            {{ d.position }}
+          </h1>
+          @if (d.isFavorite) {
+            <span class="text-amber-400">★</span>
+          }
+        </div>
+        <p class="mt-1 text-slate-500">
+          {{ d.company?.name || d.companyName || 'Entreprise inconnue' }}
+          @if (d.jobUrl) {
+            <span class="text-slate-300">•</span>
+            <a
+              [href]="d.jobUrl"
+              target="_blank"
+              rel="noopener"
+              class="font-medium text-brand-600 hover:text-brand-700"
+              >Voir l'offre ↗</a
+            >
+          }
+        </p>
+      </div>
+      <div class="flex shrink-0 items-center gap-3">
+        <a
+          [routerLink]="['/applications', d.id, 'edit']"
+          class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          >Modifier</a
+        >
+        <span
+          class="rounded-full px-3 py-1 text-sm font-semibold"
+          [class]="statusMeta[d.status].badge"
+        >
+          {{ statusMeta[d.status].label }}
+        </span>
+      </div>
+    </header>
+
+    <div class="mt-6 grid gap-6 lg:grid-cols-3">
+      <!-- Main column -->
+      <div class="flex flex-col gap-6 lg:col-span-2">
+        <!-- Status changer -->
+        <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Faire avancer
+          </h2>
+          <div class="mt-3 flex flex-wrap items-end gap-3">
+            <label class="flex flex-col gap-1.5">
+              <span class="text-xs font-medium text-slate-500">Nouveau statut</span>
+              <select
+                [(ngModel)]="selectedStatus"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              >
+                @for (s of statuses; track s) {
+                  <option [value]="s">{{ statusMeta[s].label }}</option>
+                }
+              </select>
+            </label>
+            <label class="flex flex-1 flex-col gap-1.5">
+              <span class="text-xs font-medium text-slate-500">Note (optionnel)</span>
+              <input
+                type="text"
+                [(ngModel)]="note"
+                placeholder="Ex : relancé le recruteur"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              />
+            </label>
+            <button
+              (click)="updateStatus()"
+              [disabled]="updating() || selectedStatus === d.status"
+              class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {{ updating() ? '…' : 'Mettre à jour' }}
+            </button>
+          </div>
+        </section>
+
+        <!-- Details -->
+        <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Détails
+          </h2>
+          <dl class="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Priorité</dt>
+              <dd class="text-sm text-slate-700">{{ labelOf(priorityOptions, d.priority) }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Lieu</dt>
+              <dd class="text-sm text-slate-700">{{ d.location || '—' }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Mode de travail</dt>
+              <dd class="text-sm text-slate-700">
+                {{ labelOf(workModeOptions, d.workMode) || '—' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Contrat</dt>
+              <dd class="text-sm text-slate-700">
+                {{ labelOf(employmentTypeOptions, d.employmentType) || '—' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Source</dt>
+              <dd class="text-sm text-slate-700">
+                {{ labelOf(sourceOptions, d.source) || '—' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Rémunération</dt>
+              <dd class="text-sm text-slate-700">{{ salaryText(d) || '—' }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Niveau d'envie</dt>
+              <dd class="text-sm text-amber-400">
+                {{ d.excitement ? '★'.repeat(d.excitement) : '—' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Candidaté le</dt>
+              <dd class="text-sm text-slate-700">
+                {{ d.appliedAt ? (d.appliedAt | date: 'dd/MM/yyyy') : '—' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-400">Échéance</dt>
+              <dd class="text-sm text-slate-700">
+                {{ d.deadlineAt ? (d.deadlineAt | date: 'dd/MM/yyyy') : '—' }}
+              </dd>
+            </div>
+            @if (d.closedAt) {
+              <div>
+                <dt class="text-xs font-medium text-slate-400">Clôturé le</dt>
+                <dd class="text-sm text-slate-700">{{ d.closedAt | date: 'dd/MM/yyyy' }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (d.notes) {
+            <div class="mt-4 border-t border-slate-100 pt-4">
+              <dt class="text-xs font-medium text-slate-400">Notes</dt>
+              <p class="mt-1 whitespace-pre-line text-sm text-slate-700">{{ d.notes }}</p>
+            </div>
+          }
+        </section>
+
+        <!-- Interviews -->
+        @if (d.interviews.length) {
+          <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+              Entretiens ({{ d.interviews.length }})
+            </h2>
+            <ul class="mt-3 divide-y divide-slate-100">
+              @for (iv of d.interviews; track iv.id) {
+                <li class="flex items-center justify-between gap-3 py-2.5">
+                  <div>
+                    <p class="text-sm font-medium text-slate-700">
+                      {{ interviewTypeLabel[iv.type] || iv.type }}
+                    </p>
+                    <p class="text-xs text-slate-400">
+                      {{ iv.scheduledAt ? (iv.scheduledAt | date: 'dd/MM/yyyy HH:mm') : 'Non planifié' }}
+                    </p>
+                  </div>
+                  <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                    {{ interviewOutcomeLabel[iv.outcome] || iv.outcome }}
+                  </span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+
+      <!-- Side column -->
+      <div class="flex flex-col gap-6">
+        <!-- History timeline -->
+        <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Historique
+          </h2>
+          <ol class="mt-4 flex flex-col gap-4">
+            @for (ev of d.statusHistory; track ev.id) {
+              <li class="relative flex gap-3 pl-1">
+                <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-500"></span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-slate-700">
+                    {{ statusMeta[ev.toStatus].label }}
+                  </p>
+                  <p class="text-xs text-slate-400">{{ ev.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                  @if (ev.note) {
+                    <p class="mt-0.5 text-xs italic text-slate-500">« {{ ev.note }} »</p>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+
+        <!-- Danger zone -->
+        <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Zone sensible
+          </h2>
+          <button
+            (click)="remove()"
+            [disabled]="deleting()"
+            class="mt-3 w-full rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
+          >
+            {{ deleting() ? 'Suppression…' : 'Supprimer la candidature' }}
+          </button>
+        </section>
+      </div>
+    </div>
+  }
+</div>

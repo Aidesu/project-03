@@ -1,0 +1,104 @@
+<div class="grid min-h-screen lg:grid-cols-2">
+  <!-- Brand panel -->
+  <div
+    class="relative hidden flex-col justify-between overflow-hidden bg-brand-700 p-12 text-white lg:flex"
+  >
+    <div
+      class="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-500/40 blur-3xl"
+    ></div>
+    <div
+      class="absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-brand-900/50 blur-3xl"
+    ></div>
+
+    <div class="relative flex items-center gap-2.5">
+      <span
+        class="grid h-9 w-9 place-items-center rounded-xl bg-white/15 text-lg font-black"
+        >J</span
+      >
+      <span class="text-lg font-bold tracking-tight">JobQuest</span>
+    </div>
+
+    <div class="relative max-w-sm">
+      <h1 class="text-3xl font-bold leading-tight">Commence ta quête aujourd'hui.</h1>
+      <p class="mt-4 text-brand-100">
+        Centralise chaque candidature, visualise ton pipeline et progresse niveau
+        après niveau.
+      </p>
+    </div>
+
+    <div class="relative text-sm text-brand-200">Quelques secondes pour t'inscrire.</div>
+  </div>
+
+  <!-- Form panel -->
+  <div class="flex items-center justify-center px-6 py-12">
+    <div class="w-full max-w-sm">
+      <h2 class="text-2xl font-bold tracking-tight text-slate-900">Créer un compte</h2>
+      <p class="mt-1.5 text-sm text-slate-500">C'est gratuit et rapide.</p>
+
+      @if (error()) {
+        <div
+          class="mt-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+        >
+          {{ error() }}
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="mt-6 flex flex-col gap-4">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">
+            Nom <span class="text-slate-400">(optionnel)</span>
+          </span>
+          <input
+            type="text"
+            formControlName="name"
+            autocomplete="name"
+            placeholder="Carla"
+            class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+        </label>
+
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Email</span>
+          <input
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="toi@exemple.com"
+            class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+        </label>
+
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Mot de passe</span>
+          <input
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="Au moins {{ passwordMin }} caractères"
+            class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+          @if (form.controls.password.touched && form.controls.password.hasError('minlength')) {
+            <span class="text-xs text-rose-600"
+              >Le mot de passe doit faire au moins {{ passwordMin }} caractères.</span
+            >
+          }
+        </label>
+
+        <button
+          type="submit"
+          [disabled]="loading()"
+          class="mt-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ loading() ? 'Création…' : 'Créer mon compte' }}
+        </button>
+      </form>
+
+      <p class="mt-6 text-center text-sm text-slate-500">
+        Déjà un compte ?
+        <a routerLink="/login" class="font-semibold text-brand-600 hover:text-brand-700"
+          >Se connecter</a
+        >
+      </p>
+    </div>
+  </div>
+</div>

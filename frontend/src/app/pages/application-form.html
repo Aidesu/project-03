@@ -1,0 +1,266 @@
+<div class="mx-auto max-w-3xl">
+  <header class="flex items-center justify-between gap-4">
+    <div>
+      <a
+        [routerLink]="backLink"
+        class="text-sm font-medium text-slate-400 transition hover:text-slate-600"
+        >← {{ isEdit ? 'Retour' : 'Candidatures' }}</a
+      >
+      <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+        {{ isEdit ? 'Modifier la candidature' : 'Nouvelle candidature' }}
+      </h1>
+    </div>
+  </header>
+
+  @if (!ready()) {
+    <div class="mt-6 h-96 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+  } @else {
+  <form
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    class="mt-6 flex flex-col gap-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8"
+  >
+    <!-- Le poste -->
+    <fieldset class="flex flex-col gap-4">
+      <legend class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        Le poste
+      </legend>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Intitulé du poste *</span>
+        <input
+          type="text"
+          formControlName="position"
+          placeholder="Développeur Frontend"
+          class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        />
+        @if (form.controls.position.touched && form.controls.position.invalid) {
+          <span class="text-xs text-rose-600">L’intitulé du poste est requis.</span>
+        }
+      </label>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Entreprise</span>
+          <input
+            type="text"
+            formControlName="companyName"
+            placeholder="Acme Inc."
+            class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Lieu</span>
+          <input
+            type="text"
+            formControlName="location"
+            placeholder="Paris / Remote"
+            class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+        </label>
+      </div>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Lien de l’offre</span>
+        <input
+          type="url"
+          formControlName="jobUrl"
+          placeholder="https://…"
+          class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        />
+      </label>
+    </fieldset>
+
+    <!-- Suivi -->
+    <fieldset class="flex flex-col gap-4 border-t border-slate-100 pt-6">
+      <legend class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        Suivi
+      </legend>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        @if (!isEdit) {
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium text-slate-700">Statut</span>
+            <select
+              formControlName="status"
+              class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            >
+              @for (s of statuses; track s) {
+                <option [value]="s">{{ statusMeta[s].label }}</option>
+              }
+            </select>
+          </label>
+        }
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Priorité</span>
+          <select
+            formControlName="priority"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          >
+            @for (o of priorityOptions; track o.value) {
+              <option [value]="o.value">{{ o.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Source</span>
+          <select
+            formControlName="source"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          >
+            <option value="">—</option>
+            @for (o of sourceOptions; track o.value) {
+              <option [value]="o.value">{{ o.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Mode de travail</span>
+          <select
+            formControlName="workMode"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          >
+            <option value="">—</option>
+            @for (o of workModeOptions; track o.value) {
+              <option [value]="o.value">{{ o.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Contrat</span>
+          <select
+            formControlName="employmentType"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          >
+            <option value="">—</option>
+            @for (o of employmentTypeOptions; track o.value) {
+              <option [value]="o.value">{{ o.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Niveau d’envie</span>
+        <select
+          formControlName="excitement"
+          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 sm:w-48"
+        >
+          <option [ngValue]="null">—</option>
+          @for (n of excitementLevels; track n) {
+            <option [ngValue]="n">{{ '★'.repeat(n) }}</option>
+          }
+        </select>
+      </label>
+    </fieldset>
+
+    <!-- Rémunération -->
+    <fieldset class="flex flex-col gap-4 border-t border-slate-100 pt-6">
+      <legend class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        Rémunération <span class="font-normal normal-case text-slate-300">(optionnel)</span>
+      </legend>
+
+      <div class="grid gap-4 sm:grid-cols-4">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Min</span>
+          <input
+            type="number"
+            formControlName="salaryMin"
+            min="0"
+            placeholder="40000"
+            class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Max</span>
+          <input
+            type="number"
+            formControlName="salaryMax"
+            min="0"
+            placeholder="55000"
+            class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Devise</span>
+          <input
+            type="text"
+            formControlName="salaryCurrency"
+            maxlength="3"
+            class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm uppercase outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Période</span>
+          <select
+            formControlName="salaryPeriod"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          >
+            @for (o of salaryPeriodOptions; track o.value) {
+              <option [value]="o.value">{{ o.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </fieldset>
+
+    <!-- Échéance & notes -->
+    <fieldset class="flex flex-col gap-4 border-t border-slate-100 pt-6">
+      <legend class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        Échéance & notes
+      </legend>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Date limite</span>
+        <input
+          type="date"
+          formControlName="deadlineAt"
+          class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 sm:w-56"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Notes</span>
+        <textarea
+          formControlName="notes"
+          rows="3"
+          placeholder="Contexte, contact, points à préparer…"
+          class="resize-y rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        ></textarea>
+      </label>
+    </fieldset>
+
+    @if (error()) {
+      <div
+        class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+      >
+        {{ error() }}
+      </div>
+    }
+
+    <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-6">
+      <a
+        [routerLink]="backLink"
+        class="rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-500 transition hover:text-slate-700"
+        >Annuler</a
+      >
+      <button
+        type="submit"
+        [disabled]="saving()"
+        class="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{
+          saving()
+            ? 'Enregistrement…'
+            : isEdit
+              ? 'Enregistrer les modifications'
+              : 'Enregistrer'
+        }}
+      </button>
+    </div>
+  </form>
+  }
+</div>

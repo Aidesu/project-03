@@ -82,6 +82,37 @@ pnpm start                    # http://localhost:4200
 | `S3_ENDPOINT`  | MinIO/S3 endpoint for attachments    | `http://localhost:9000` |
 | `S3_BUCKET`    | Bucket for uploaded files            | `project03-uploads`     |
 
+## Authentication
+
+Cookie-based JWT, **secure by default**. Tokens live in httpOnly, SameSite=strict cookies
+(`Secure` in production). Endpoints under `/api/auth`: `GET /csrf`, `POST /register`,
+`POST /login`, `POST /refresh`, `POST /logout`, `GET /me`.
+
+- Clients call `GET /api/auth/csrf` once, then echo the `XSRF-TOKEN` cookie back as the
+  `X-XSRF-TOKEN` header on mutating requests (Angular's `HttpClient` does this automatically).
+- Passwords are hashed with **argon2id**; refresh tokens are opaque, stored hashed, and
+  **rotate with reuse detection** (replaying a revoked token revokes the whole session family).
+- Every route requires a valid access token unless marked `@Public()`. Login/register are
+  rate-limited; `helmet` sets security headers.
+
+## Domain model
+
+Job-search tracker, fully **per-user isolated**. Core Prisma models (see
+`backend/prisma/schema.prisma`):
+
+| Group         | Models |
+| ------------- | ------ |
+| Identity      | `User`, `UserSettings`, `RefreshSession` |
+| Applications  | `JobApplication` (status, salary, work mode, dates, priority…), `Company`, `Contact` |
+| Pipeline      | `Interview`, `ApplicationStatusEvent` (status history → funnel & timing stats) |
+| Attachments   | `Document` (metadata; bytes in MinIO/S3), `Tag` + `ApplicationTag` |
+| Follow-ups    | `Reminder` (due dates → Redis job queue) |
+| Gamification  | `GamificationProfile` (XP, level, streaks), `XpEvent` (append-only ledger), `Achievement` + `UserAchievement` |
+
+Deleting a company nulls the link on its applications (kept); deleting an application keeps the
+XP history. Statistics are derived from `ApplicationStatusEvent` + timestamps (no snapshot tables
+in v1).
+
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).

@@ -24,4 +24,5 @@ pnpm-debug.log*
 *.iml
 
 # Claude Code local settings
+.claude
 .claude/settings.local.json

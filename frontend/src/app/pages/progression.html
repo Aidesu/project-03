@@ -1,0 +1,156 @@
+<header class="flex flex-col gap-1">
+  <p class="text-xs font-semibold uppercase tracking-wider text-brand-600">Progression</p>
+  <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+    Ta quête, en un coup d'œil
+  </h1>
+  <p class="text-slate-500">Niveaux, séries et succès débloqués en cherchant.</p>
+</header>
+
+@if (loading()) {
+  <div class="mt-8 h-48 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+  <div class="mt-6 h-64 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+} @else if (error()) {
+  <div class="mt-8 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+    Impossible de charger ta progression pour l'instant.
+  </div>
+} @else if (profile(); as p) {
+  <!-- Level ring + streak -->
+  <section
+    class="relative mt-8 overflow-hidden rounded-2xl bg-brand-700 p-6 text-white shadow-sm md:p-8"
+  >
+    <div class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-500/40 blur-3xl"></div>
+
+    <div class="relative flex flex-col items-center gap-8 sm:flex-row sm:items-center">
+      <div class="relative h-36 w-36 shrink-0">
+        <svg viewBox="0 0 120 120" class="h-full w-full -rotate-90">
+          <circle
+            cx="60"
+            cy="60"
+            r="54"
+            fill="none"
+            stroke="rgba(255,255,255,0.18)"
+            stroke-width="9"
+          />
+          <circle
+            cx="60"
+            cy="60"
+            r="54"
+            fill="none"
+            stroke="var(--color-xp-400)"
+            stroke-width="9"
+            stroke-linecap="round"
+            [attr.stroke-dasharray]="ringCircumference"
+            [attr.stroke-dashoffset]="ringOffsetValue()"
+            class="xp-ring"
+          />
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="text-4xl font-black leading-none">{{ p.level }}</span>
+          <span class="mt-1 text-[11px] font-medium uppercase tracking-wider text-brand-200"
+            >Niveau</span
+          >
+        </div>
+      </div>
+
+      <div class="flex-1 text-center sm:text-left">
+        <p class="text-sm font-medium text-brand-200">
+          {{ p.xpIntoLevel }} / {{ p.xpForNextLevel }} XP avant le niveau
+          {{ p.level + 1 }}
+        </p>
+        <p class="mt-1 text-2xl font-bold">{{ p.xp }} XP au total</p>
+
+        <div class="mt-5 flex items-center justify-center gap-3 sm:justify-start">
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-white/10 text-xl">🔥</span>
+          <div>
+            <p class="text-lg font-bold leading-tight">
+              {{ p.currentStreakDays }}
+              <span class="text-sm font-medium text-brand-200">jours</span>
+            </p>
+            <p class="text-xs text-brand-200">Meilleure série : {{ p.longestStreakDays }} jours</p>
+          </div>
+        </div>
+        <p class="mt-3 text-sm text-brand-100">{{ streakMessage() }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Achievements -->
+  <section class="mt-8">
+    <div class="flex items-baseline justify-between">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Succès</h2>
+      <p class="text-sm font-medium text-slate-400">
+        {{ unlockedCount() }} / {{ totalCount() }} débloqués
+      </p>
+    </div>
+
+    <div class="mt-4 flex flex-col gap-7">
+      @for (group of groups(); track group.category) {
+        <div>
+          <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            {{ group.category }}
+          </h3>
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            @for (a of group.achievements; track a.id) {
+              <div
+                class="medal flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm"
+                [attr.aria-label]="
+                  a.unlockedAt
+                    ? 'Succès débloqué : ' + a.name + ', obtenu le ' + formatDate(a.unlockedAt)
+                    : 'Succès verrouillé : ' + a.name + ', ' + a.progress + ' sur ' + a.threshold
+                "
+              >
+                <div class="relative h-20 w-20 shrink-0">
+                  <div class="medal-ring" [class.medal-ring--gold]="a.unlockedAt"></div>
+                  <div
+                    class="medal-disc"
+                    [class.medal-disc--unlocked]="a.unlockedAt"
+                    [class.medal-disc--locked]="!a.unlockedAt"
+                  >
+                    <span aria-hidden="true">{{ a.unlockedAt ? a.icon : '🔒' }}</span>
+                  </div>
+                  @if (a.tier) {
+                    <span
+                      class="absolute -bottom-1 left-1/2 grid h-5 w-5 -translate-x-1/2 place-items-center rounded-full bg-white text-[10px] font-bold ring-1 ring-slate-200"
+                      [class.text-xp-600]="a.unlockedAt"
+                      [class.text-slate-400]="!a.unlockedAt"
+                      >{{ a.tier }}</span
+                    >
+                  }
+                </div>
+
+                <div>
+                  <p
+                    class="text-sm font-semibold"
+                    [class.text-slate-900]="a.unlockedAt"
+                    [class.text-slate-400]="!a.unlockedAt"
+                  >
+                    {{ a.name }}
+                  </p>
+                  <p class="mt-0.5 line-clamp-2 text-xs text-slate-400">{{ a.description }}</p>
+                </div>
+
+                @if (a.unlockedAt) {
+                  <p class="text-xs font-medium text-emerald-600">
+                    Débloqué le {{ formatDate(a.unlockedAt) }}
+                  </p>
+                } @else {
+                  <div class="w-full">
+                    <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        class="h-full rounded-full bg-slate-300"
+                        [style.width.%]="(a.progress / a.threshold) * 100"
+                      ></div>
+                    </div>
+                    <p class="mt-1 text-[11px] font-medium text-slate-400">
+                      {{ a.progress }} / {{ a.threshold }}
+                    </p>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+}

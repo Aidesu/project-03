@@ -10,10 +10,130 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =====================================================================
+// Enums
+// =====================================================================
+
 enum Role {
   USER
   ADMIN
 }
+
+enum ApplicationStatus {
+  WISHLIST // saved, not applied yet
+  DRAFT // application in preparation
+  APPLIED
+  SCREENING // recruiter / phone screen stage
+  INTERVIEW
+  TECHNICAL_TEST
+  OFFER
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  GHOSTED // no news after follow-ups
+}
+
+enum WorkMode {
+  ON_SITE
+  HYBRID
+  REMOTE
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  APPRENTICESHIP
+  FREELANCE
+  TEMPORARY
+}
+
+enum ApplicationSource {
+  JOB_BOARD
+  LINKEDIN
+  COMPANY_WEBSITE
+  REFERRAL
+  RECRUITER
+  CAREER_FAIR
+  SPONTANEOUS
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SalaryPeriod {
+  HOUR
+  DAY
+  MONTH
+  YEAR
+}
+
+enum InterviewType {
+  PHONE_SCREEN
+  HR
+  TECHNICAL
+  TAKE_HOME
+  SYSTEM_DESIGN
+  BEHAVIORAL
+  ONSITE
+  PANEL
+  FINAL
+  OTHER
+}
+
+enum InterviewMode {
+  REMOTE
+  ONSITE
+  PHONE
+}
+
+enum InterviewOutcome {
+  PENDING
+  PASSED
+  FAILED
+  CANCELED
+  NO_SHOW
+}
+
+enum DocumentType {
+  CV
+  COVER_LETTER
+  PORTFOLIO
+  OFFER_LETTER
+  CERTIFICATE
+  OTHER
+}
+
+enum ReminderType {
+  FOLLOW_UP
+  PREPARE_INTERVIEW
+  DEADLINE
+  THANK_YOU
+  CUSTOM
+}
+
+enum XpReason {
+  APPLICATION_CREATED
+  APPLICATION_SUBMITTED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_COMPLETED
+  OFFER_RECEIVED
+  OFFER_ACCEPTED
+  STREAK_BONUS
+  DAILY_GOAL
+  WEEKLY_GOAL
+  ACHIEVEMENT_UNLOCKED
+  OTHER
+}
+
+// =====================================================================
+// Identity & auth
+// =====================================================================
 
 model User {
   id           Int      @id @default(autoincrement())
@@ -24,7 +144,22 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Auth
   sessions RefreshSession[]
+
+  // Profile
+  settings     UserSettings?
+  gamification GamificationProfile?
+
+  // Domain (all per-user isolated)
+  companies    Company[]
+  contacts     Contact[]
+  applications JobApplication[]
+  documents    Document[]
+  tags         Tag[]
+  reminders    Reminder[]
+  xpEvents     XpEvent[]
+  achievements UserAchievement[]
 }
 
 // Refresh-token sessions: enables rotation, revocation and reuse/theft detection.
@@ -42,4 +177,271 @@ model RefreshSession {
 
   @@index([userId])
   @@index([familyId])
+}
+
+model UserSettings {
+  id                    String   @id @default(uuid())
+  userId                Int      @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locale                String   @default("fr")
+  timezone              String   @default("Europe/Paris")
+  weeklyApplicationGoal Int      @default(5) // gamified target: applications per week
+  emailRemindersEnabled Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// =====================================================================
+// Job-search domain
+// =====================================================================
+
+model Company {
+  id        String   @id @default(uuid())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  website   String?
+  industry  String?
+  location  String?
+  size      String? // e.g. "1-10", "11-50", "51-200", ...
+  logoUrl   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications JobApplication[]
+  contacts     Contact[]
+
+  @@index([userId])
+}
+
+model Contact {
+  id          String   @id @default(uuid())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  firstName   String
+  lastName    String?
+  email       String?
+  phone       String?
+  title       String? // role at the company (e.g. "Talent Acquisition")
+  linkedinUrl String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  interviews             Interview[]
+  primaryForApplications JobApplication[] @relation("ApplicationPrimaryContact")
+
+  @@index([userId])
+  @@index([companyId])
+}
+
+model JobApplication {
+  id        String   @id @default(uuid())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  position    String
+  companyName String? // free-text fallback when no Company record is linked yet
+  description String?
+
+  status         ApplicationStatus  @default(WISHLIST)
+  source         ApplicationSource?
+  jobUrl         String?
+  location       String?
+  workMode       WorkMode?
+  employmentType EmploymentType?
+  priority       Priority           @default(MEDIUM)
+  excitement     Int? // personal 1..5 rating (validated in the app layer)
+
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String       @default("EUR") // ISO 4217 code
+  salaryPeriod   SalaryPeriod @default(YEAR)
+
+  appliedAt  DateTime?
+  deadlineAt DateTime?
+  closedAt   DateTime? // when it reached a terminal status (accepted/rejected/withdrawn)
+
+  notes      String?
+  isFavorite Boolean   @default(false)
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  primaryContactId String?
+  primaryContact   Contact? @relation("ApplicationPrimaryContact", fields: [primaryContactId], references: [id], onDelete: SetNull)
+
+  interviews    Interview[]
+  statusHistory ApplicationStatusEvent[]
+  documents     Document[]
+  reminders     Reminder[]
+  tags          ApplicationTag[]
+  xpEvents      XpEvent[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([companyId])
+  @@index([primaryContactId])
+}
+
+// Status transitions over time — the backbone of the pipeline/funnel statistics.
+model ApplicationStatusEvent {
+  id            String             @id @default(uuid())
+  applicationId String
+  application   JobApplication     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  note          String?
+  createdAt     DateTime           @default(now())
+
+  @@index([applicationId])
+}
+
+model Interview {
+  id               String           @id @default(uuid())
+  applicationId    String
+  application      JobApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  contactId        String?
+  contact          Contact?         @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  type             InterviewType
+  mode             InterviewMode?
+  scheduledAt      DateTime?
+  durationMinutes  Int?
+  location         String? // address or meeting link
+  interviewerNames String? // free-text when contacts aren't recorded
+  notes            String?
+  outcome          InterviewOutcome @default(PENDING)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([applicationId])
+  @@index([contactId])
+}
+
+// File metadata; the bytes live in MinIO/S3 under `storageKey`.
+model Document {
+  id            String          @id @default(uuid())
+  userId        Int
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   JobApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  type          DocumentType    @default(OTHER)
+  label         String?
+  storageKey    String // object key in the S3 bucket
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  createdAt     DateTime        @default(now())
+
+  @@index([userId])
+  @@index([applicationId])
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  color     String? // hex color for the UI
+  createdAt DateTime @default(now())
+
+  applications ApplicationTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model ApplicationTag {
+  applicationId String
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  tagId         String
+  tag           Tag            @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  assignedAt    DateTime       @default(now())
+
+  @@id([applicationId, tagId])
+  @@index([tagId])
+}
+
+model Reminder {
+  id            String          @id @default(uuid())
+  userId        Int
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   JobApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          ReminderType    @default(CUSTOM)
+  title         String
+  notes         String?
+  dueAt         DateTime
+  completedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([userId, dueAt])
+  @@index([applicationId])
+}
+
+// =====================================================================
+// Gamification
+// =====================================================================
+
+model GamificationProfile {
+  id                String    @id @default(uuid())
+  userId            Int       @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xp                Int       @default(0)
+  level             Int       @default(1)
+  currentStreakDays Int       @default(0)
+  longestStreakDays Int       @default(0)
+  lastActiveOn      DateTime? // date of last XP-earning activity, for streak tracking
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// Append-only ledger of XP awards — auditable and lets the profile total be recomputed.
+model XpEvent {
+  id            String          @id @default(uuid())
+  userId        Int
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   JobApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  amount        Int
+  reason        XpReason
+  description   String?
+  createdAt     DateTime        @default(now())
+
+  @@index([userId])
+  @@index([userId, createdAt])
+}
+
+// Catalog of achievements (seeded, shared across users).
+model Achievement {
+  id          String   @id @default(uuid())
+  code        String   @unique // stable key, e.g. "FIRST_APPLICATION"
+  name        String
+  description String
+  icon        String?
+  xpReward    Int      @default(0)
+  threshold   Int? // generic numeric criterion (e.g. N applications)
+  createdAt   DateTime @default(now())
+
+  users UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  progress      Int         @default(0)
+  unlockedAt    DateTime? // null while still in progress
+  createdAt     DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+  @@index([userId])
 }

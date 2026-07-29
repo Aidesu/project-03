@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ *
+ * Design tokens — a calm, focused palette for a gamified job tracker. *
+ * Indigo carries the product; amber is reserved for XP / streak.      *
+ * ------------------------------------------------------------------ */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-brand-50: #eef1ff;
+  --color-brand-100: #e0e5ff;
+  --color-brand-200: #c7cfff;
+  --color-brand-300: #a5afff;
+  --color-brand-400: #8186fb;
+  --color-brand-500: #6a63f3;
+  --color-brand-600: #5b48e6;
+  --color-brand-700: #4d39ca;
+  --color-brand-800: #4031a3;
+  --color-brand-900: #372e81;
+
+  --color-xp-400: #fbbf24;
+  --color-xp-500: #f59e0b;
+  --color-xp-600: #d97706;
+
+  /* Layered elevation — replaces flat `shadow-sm` where a surface needs to lift. */
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px -14px rgba(15, 23, 42, 0.12);
+  --shadow-elevated:
+    0 24px 48px -20px rgba(76, 57, 202, 0.45), 0 8px 20px -10px rgba(15, 23, 42, 0.16);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased;
+    font-family: var(--font-sans);
+  }
+
+  /* Thin, unobtrusive scrollbars to match the clean surface look. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme(--color-slate-300) transparent;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Achievement medals — a milled coin edge (repeating-conic-gradient)  *
+ * standing in for the generic "icon in a colored circle" badge.       *
+ * Locked = flat pewter ghost. Unlocked = gold disc with a shine sweep. *
+ * ------------------------------------------------------------------ */
+@layer components {
+  .medal-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: repeating-conic-gradient(
+      theme(--color-slate-300) 0deg 7deg,
+      transparent 7deg 14deg
+    );
+  }
+
+  .medal-ring--gold {
+    background: repeating-conic-gradient(theme(--color-xp-500) 0deg 7deg, transparent 7deg 14deg);
+  }
+
+  .medal-disc {
+    position: absolute;
+    inset: 7px;
+    display: grid;
+    place-items: center;
+    border-radius: 9999px;
+    overflow: hidden;
+    font-size: 1.5rem;
+  }
+
+  .medal-disc--locked {
+    @apply bg-slate-100 text-slate-300;
+  }
+
+  .medal-disc--unlocked {
+    @apply text-white shadow-inner;
+    background: radial-gradient(circle at 35% 30%, theme(--color-xp-400), theme(--color-xp-600));
+  }
+
+  .medal-disc--unlocked::after {
+    content: '';
+    position: absolute;
+    inset: -60%;
+    background: linear-gradient(
+      115deg,
+      transparent 40%,
+      rgb(255 255 255 / 55%) 50%,
+      transparent 60%
+    );
+    transform: translateX(-120%);
+    transition: transform 0.7s ease;
+  }
+
+  .medal:hover .medal-disc--unlocked::after,
+  .medal:focus-within .medal-disc--unlocked::after {
+    transform: translateX(120%);
+  }
+
+  .xp-ring {
+    transition: stroke-dashoffset 0.6s ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medal-disc--unlocked::after,
+  .xp-ring {
+    transition: none;
+  }
+}
