@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApplicationsService } from '../core/applications.service';
 import { ALL_STATUSES, STATUS_META } from '../core/application-status';
+import { avatarColor } from '../core/avatar-color';
 import {
   ApplicationListItem,
   ApplicationStatus,
@@ -71,5 +72,9 @@ export class Applications {
   goTo(page: number): void {
     this.page = page;
     this.load();
+  }
+
+  avatarColor(name: string): string {
+    return avatarColor(name);
   }
 }

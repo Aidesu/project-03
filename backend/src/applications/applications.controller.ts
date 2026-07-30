@@ -15,9 +15,9 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApplicationsService } from './applications.service';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { DailyStatsQueryDto } from './dto/daily-stats-query.dto';
 import { QueryApplicationsDto } from './dto/query-applications.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
-import { WeeklyStatsQueryDto } from './dto/weekly-stats-query.dto';
 
 @Controller('applications')
 export class ApplicationsController {
@@ -39,12 +39,12 @@ export class ApplicationsController {
     return this.applications.findMany(userId, query);
   }
 
-  @Get('stats/weekly')
-  weeklyStats(
+  @Get('stats/daily')
+  dailyStats(
     @CurrentUser('sub') userId: number,
-    @Query() query: WeeklyStatsQueryDto,
+    @Query() query: DailyStatsQueryDto,
   ) {
-    return this.applications.weeklyStats(userId, query);
+    return this.applications.dailyStats(userId, query);
   }
 
   @Get(':id')

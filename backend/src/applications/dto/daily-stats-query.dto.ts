@@ -1,11 +1,11 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
-export class WeeklyStatsQueryDto {
+export class DailyStatsQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(4)
-  @Max(26)
-  weeks: number = 8;
+  @Min(1)
+  @Max(90)
+  days: number = 7;
 }

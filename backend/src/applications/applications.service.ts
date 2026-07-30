@@ -13,18 +13,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { DailyStatsQueryDto } from './dto/daily-stats-query.dto';
 import { QueryApplicationsDto } from './dto/query-applications.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
-import { WeeklyStatsQueryDto } from './dto/weekly-stats-query.dto';
 
-/** Monday 00:00 UTC of the week containing `date`. */
-function startOfUtcWeek(date: Date): Date {
-  const d = new Date(
+/** Midnight UTC of the given date. */
+function startOfUtcDay(date: Date): Date {
+  return new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
   );
-  const diffToMonday = (d.getUTCDay() + 6) % 7; // Mon=0 ... Sun=6
-  d.setUTCDate(d.getUTCDate() - diffToMonday);
-  return d;
 }
 
 const APPLICATION_DETAIL_INCLUDE = {
@@ -301,13 +298,13 @@ export class ApplicationsService {
   }
 
   /** Applications created per week, oldest first — the dashboard trend chart. */
-  async weeklyStats(
+  async dailyStats(
     userId: number,
-    query: WeeklyStatsQueryDto,
-  ): Promise<{ weekStart: string; count: number }[]> {
-    const { weeks } = query;
-    const rangeStart = startOfUtcWeek(new Date());
-    rangeStart.setUTCDate(rangeStart.getUTCDate() - (weeks - 1) * 7);
+    query: DailyStatsQueryDto,
+  ): Promise<{ date: string; count: number }[]> {
+    const { days } = query;
+    const rangeStart = startOfUtcDay(new Date());
+    rangeStart.setUTCDate(rangeStart.getUTCDate() - (days - 1));
 
     const applications = await this.prisma.jobApplication.findMany({
       where: { userId, createdAt: { gte: rangeStart } },
@@ -315,17 +312,17 @@ export class ApplicationsService {
     });
 
     const buckets = new Map<string, number>();
-    for (let i = 0; i < weeks; i++) {
-      const weekStart = new Date(rangeStart);
-      weekStart.setUTCDate(weekStart.getUTCDate() + i * 7);
-      buckets.set(weekStart.toISOString().slice(0, 10), 0);
+    for (let i = 0; i < days; i++) {
+      const day = new Date(rangeStart);
+      day.setUTCDate(day.getUTCDate() + i);
+      buckets.set(day.toISOString().slice(0, 10), 0);
     }
     for (const { createdAt } of applications) {
-      const key = startOfUtcWeek(createdAt).toISOString().slice(0, 10);
+      const key = startOfUtcDay(createdAt).toISOString().slice(0, 10);
       if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
     }
 
-    return Array.from(buckets, ([weekStart, count]) => ({ weekStart, count }));
+    return Array.from(buckets, ([date, count]) => ({ date, count }));
   }
 
   // --- helpers ---

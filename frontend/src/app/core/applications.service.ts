@@ -6,11 +6,11 @@ import {
   ApplicationListItem,
   ApplicationSource,
   ApplicationStatus,
+  DailyApplicationStat,
   EmploymentType,
   Paginated,
   Priority,
   SalaryPeriod,
-  WeeklyApplicationStat,
   WorkMode,
 } from './models';
 
@@ -109,9 +109,9 @@ export class ApplicationsService {
     return this.http.delete<void>(`/api/applications/${id}`);
   }
 
-  getWeeklyStats(weeks = 8): Observable<WeeklyApplicationStat[]> {
-    return this.http.get<WeeklyApplicationStat[]>('/api/applications/stats/weekly', {
-      params: { weeks },
+  getDailyStats(days = 7): Observable<DailyApplicationStat[]> {
+    return this.http.get<DailyApplicationStat[]>('/api/applications/stats/daily', {
+      params: { days },
     });
   }
 }

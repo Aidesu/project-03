@@ -179,9 +179,9 @@ export interface Achievement {
   unlockedAt: string | null;
 }
 
-/** Shape returned by `GET /api/applications/stats/weekly` — oldest first. */
-export interface WeeklyApplicationStat {
-  weekStart: string;
+/** Shape returned by `GET /api/applications/stats/daily` — oldest first. */
+export interface DailyApplicationStat {
+  date: string;
   count: number;
 }
 

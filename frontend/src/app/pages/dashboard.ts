@@ -12,7 +12,7 @@ import { RouterLink } from '@angular/router';
 import { ApplicationsService } from '../core/applications.service';
 import { AuthService } from '../core/auth.service';
 import { GamificationService } from '../core/gamification.service';
-import { GamificationProfile, WeeklyApplicationStat } from '../core/models';
+import { DailyApplicationStat, GamificationProfile } from '../core/models';
 import { RING_CIRCUMFERENCE, ringOffset } from '../core/xp-ring';
 
 const XP_REASON_LABEL: Record<string, string> = {
@@ -29,31 +29,78 @@ const XP_REASON_LABEL: Record<string, string> = {
   OTHER: 'Activité',
 };
 
-// A small accent dot per reason — identity without a legend, per the app's timeline feed.
+// A small accent dot per reason — identity without a legend, in the activity feed.
 const XP_REASON_ACCENT: Record<string, string> = {
-  APPLICATION_CREATED: 'bg-brand-400',
-  APPLICATION_SUBMITTED: 'bg-brand-500',
-  INTERVIEW_SCHEDULED: 'bg-xp-400',
-  INTERVIEW_COMPLETED: 'bg-xp-500',
+  APPLICATION_CREATED: 'bg-aurora-blue/60',
+  APPLICATION_SUBMITTED: 'bg-aurora-blue',
+  INTERVIEW_SCHEDULED: 'bg-aurora-violet/60',
+  INTERVIEW_COMPLETED: 'bg-aurora-violet',
   OFFER_RECEIVED: 'bg-emerald-400',
   OFFER_ACCEPTED: 'bg-emerald-600',
-  STREAK_BONUS: 'bg-xp-500',
-  DAILY_GOAL: 'bg-xp-400',
-  WEEKLY_GOAL: 'bg-xp-500',
-  ACHIEVEMENT_UNLOCKED: 'bg-brand-600',
+  STREAK_BONUS: 'bg-aurora-pink',
+  DAILY_GOAL: 'bg-aurora-blue/70',
+  WEEKLY_GOAL: 'bg-aurora-violet',
+  ACHIEVEMENT_UNLOCKED: 'bg-aurora-pink',
   OTHER: 'bg-slate-300',
 };
+
+// How far back the heatmap looks — 12 full weeks, GitHub-style.
+const HEATMAP_WEEKS = 12;
+const HEATMAP_DAYS = HEATMAP_WEEKS * 7;
+
+// One CSS color class per activity level (0 = none), light blue → pink.
+const HEAT_LEVEL_CLASS = ['bg-slate-100', 'bg-[#BFE0FF]', 'bg-[#8FB4FA]', 'bg-[#B78BEF]', 'bg-[#F472B6]'];
+
+function heatLevel(count: number): number {
+  if (count <= 0) return 0;
+  if (count === 1) return 1;
+  if (count === 2) return 2;
+  if (count <= 4) return 3;
+  return 4;
+}
+
+interface HeatCell {
+  date: string;
+  count: number;
+  level: number;
+  label: string;
+}
+
+/** Groups a run of days (oldest first) into Monday-start week columns, padding the first week. */
+function buildHeatmapWeeks(stats: DailyApplicationStat[]): (HeatCell | null)[][] {
+  if (stats.length === 0) return [];
+  const first = new Date(`${stats[0].date}T00:00:00Z`);
+  const leadingPad = (first.getUTCDay() + 6) % 7; // days since Monday
+
+  const cells: (HeatCell | null)[] = [
+    ...Array.from({ length: leadingPad }, () => null),
+    ...stats.map((s) => ({
+      date: s.date,
+      count: s.count,
+      level: heatLevel(s.count),
+      label: new Date(`${s.date}T00:00:00Z`).toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      }),
+    })),
+  ];
+
+  const weeks: (HeatCell | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  return weeks;
+}
 
 // Chart geometry. The viewBox width tracks the container's real pixel width (via
 // ResizeObserver) so text stays crisp at its defined size instead of shrinking
 // with the SVG on narrow screens — only the height and paddings are fixed.
 const CHART_WIDTH_FALLBACK = 640;
-const CHART_HEIGHT = 210;
-const PAD_LEFT = 30;
+const CHART_HEIGHT = 230;
+const PAD_LEFT = 32;
 const PAD_RIGHT = 8;
-const PAD_TOP = 44; // headroom for the hover tooltip above the tallest bar
+const PAD_TOP = 40; // headroom for the hover tooltip above the tallest bar
 const PAD_BOTTOM = 24;
-const BAR_MAX_WIDTH = 24;
+const BAR_MAX_WIDTH = 32;
 const MIN_BAR_HEIGHT = 6;
 const PLOT_HEIGHT = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
 
@@ -66,6 +113,7 @@ function niceMax(max: number): number {
 
 interface ChartPoint {
   label: string;
+  fullLabel: string;
   count: number;
   x: number;
   width: number;
@@ -89,7 +137,8 @@ export class Dashboard implements AfterViewInit, OnDestroy {
 
   readonly user = this.auth.user;
   readonly profile = signal<GamificationProfile | null>(null);
-  readonly weeklyStats = signal<WeeklyApplicationStat[] | null>(null);
+  /** Last 12 weeks of daily counts, oldest first — feeds both the chart and the heatmap. */
+  readonly dailyStats = signal<DailyApplicationStat[] | null>(null);
   readonly profileLoaded = signal(false);
   readonly statsLoaded = signal(false);
   readonly loading = computed(() => !this.profileLoaded() || !this.statsLoaded());
@@ -104,8 +153,8 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   readonly plotRight = computed(() => this.chartWidth() - PAD_RIGHT);
   readonly baselineY = PAD_TOP + PLOT_HEIGHT;
   readonly labelY = CHART_HEIGHT - 6;
-  readonly tooltipWidth = 104;
-  readonly tooltipHeight = 30;
+  readonly tooltipWidth = 116;
+  readonly tooltipHeight = 34;
 
   readonly ringPct = computed(() => {
     const p = this.profile();
@@ -114,7 +163,6 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   });
 
   readonly ringOffsetValue = computed(() => ringOffset(this.ringPct(), RING_CIRCUMFERENCE));
-
   readonly ringCircumference = RING_CIRCUMFERENCE;
 
   readonly firstName = computed(() => {
@@ -123,9 +171,13 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     return base.split(/[@\s]/)[0];
   });
 
+  /** Just the last 7 days, for the bar chart — the heatmap uses the full range. */
+  private readonly chartStats = computed(() => (this.dailyStats() ?? []).slice(-7));
+
+  readonly heatmapWeeks = computed(() => buildHeatmapWeeks(this.dailyStats() ?? []));
+
   private readonly axisMax = computed(() => {
-    const stats = this.weeklyStats() ?? [];
-    return niceMax(Math.max(0, ...stats.map((w) => w.count)));
+    return niceMax(Math.max(0, ...this.chartStats().map((d) => d.count)));
   });
 
   readonly yTicks = computed(() => {
@@ -137,23 +189,26 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   });
 
   readonly chartPoints = computed<ChartPoint[]>(() => {
-    const stats = this.weeklyStats();
-    if (!stats || stats.length === 0) return [];
+    const stats = this.chartStats();
+    if (stats.length === 0) return [];
     const max = this.axisMax();
     const plotWidth = this.chartWidth() - PAD_LEFT - PAD_RIGHT;
     const band = plotWidth / stats.length;
     const barWidth = Math.min(BAR_MAX_WIDTH, band * 0.55);
 
-    return stats.map((w, i) => {
-      const rawHeight = (w.count / max) * PLOT_HEIGHT;
-      const height = w.count > 0 ? Math.max(MIN_BAR_HEIGHT, rawHeight) : 0;
+    return stats.map((d, i) => {
+      const rawHeight = (d.count / max) * PLOT_HEIGHT;
+      const height = d.count > 0 ? Math.max(MIN_BAR_HEIGHT, rawHeight) : 0;
       const x = PAD_LEFT + i * band + (band - barWidth) / 2;
+      const date = new Date(d.date);
       return {
-        label: new Date(w.weekStart).toLocaleDateString('fr-FR', {
-          day: '2-digit',
-          month: '2-digit',
+        label: date.toLocaleDateString('fr-FR', { weekday: 'short' }),
+        fullLabel: date.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
         }),
-        count: w.count,
+        count: d.count,
         x,
         width: barWidth,
         y: PAD_TOP + PLOT_HEIGHT - height,
@@ -163,16 +218,14 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     });
   });
 
-  readonly periodTotal = computed(() =>
-    (this.weeklyStats() ?? []).reduce((sum, w) => sum + w.count, 0),
-  );
+  readonly periodTotal = computed(() => this.chartStats().reduce((sum, d) => sum + d.count, 0));
 
-  readonly weeklyDelta = computed(() => {
-    const stats = this.weeklyStats();
-    if (!stats || stats.length < 2) return null;
-    const last = stats[stats.length - 1].count;
-    const previous = stats[stats.length - 2].count;
-    return { last, delta: last - previous };
+  readonly dailyDelta = computed(() => {
+    const stats = this.chartStats();
+    if (stats.length < 2) return null;
+    const today = stats[stats.length - 1].count;
+    const yesterday = stats[stats.length - 2].count;
+    return { today, delta: today - yesterday };
   });
 
   constructor() {
@@ -186,9 +239,9 @@ export class Dashboard implements AfterViewInit, OnDestroy {
         this.profileLoaded.set(true);
       },
     });
-    this.applications.getWeeklyStats(8).subscribe({
+    this.applications.getDailyStats(HEATMAP_DAYS).subscribe({
       next: (stats) => {
-        this.weeklyStats.set(stats);
+        this.dailyStats.set(stats);
         this.statsLoaded.set(true);
       },
       error: () => {
@@ -218,6 +271,14 @@ export class Dashboard implements AfterViewInit, OnDestroy {
 
   reasonAccent(reason: string): string {
     return XP_REASON_ACCENT[reason] ?? 'bg-slate-300';
+  }
+
+  heatCellClass(level: number): string {
+    return HEAT_LEVEL_CLASS[level] ?? HEAT_LEVEL_CLASS[0];
+  }
+
+  heatCellTitle(cell: HeatCell): string {
+    return `${cell.count} candidature${cell.count === 1 ? '' : 's'} — ${cell.label}`;
   }
 
   /** Clamped so the tooltip never overflows the chart's left/right edge. */

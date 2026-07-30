@@ -6,12 +6,17 @@ import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 // Auth endpoints must never trigger a nested refresh attempt on their own 401s.
+// `/me` is included: it's only ever called by restoreSession() at bootstrap,
+// before the router's initial navigation runs — a 401 there just means "no
+// session yet" and must not force-navigate to /login, or it would hijack
+// whatever route (e.g. /register, a deep link) the user actually requested.
 const AUTH_ENDPOINTS = [
   '/api/auth/refresh',
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/logout',
   '/api/auth/csrf',
+  '/api/auth/me',
 ];
 
 /**
