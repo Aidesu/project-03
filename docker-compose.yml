@@ -1,14 +1,24 @@
-# Local development infrastructure for project-03.
+# Local development stack for project-03.
 #
-# Brings up the data layer:
-#   - db    : PostgreSQL 16   (primary database, used by Prisma)
-#   - redis : Redis 7         (cache / sessions / job queue for reminders & follow-ups)
-#   - minio : MinIO (S3 API)  (object storage for attachments: CVs, cover letters, offer PDFs)
+# Data layer:
+#   - db      : PostgreSQL 16   (primary database, used by Prisma)
+#   - redis   : Redis 7         (cache / sessions / job queue for reminders & follow-ups)
+#   - minio   : MinIO (S3 API)  (object storage for attachments: CVs, cover letters, offer PDFs)
+#
+# App layer (dev-mode, hot-reload, built from Dockerfile.dev in each folder):
+#   - backend  : NestJS API   (nest start --watch)  -> http://localhost:3000/api
+#   - frontend : Angular app  (ng serve)             -> http://localhost:4200
 #
 # Usage:
 #   cp .env.example .env      # then adjust the secrets
-#   docker compose up -d
-#   docker compose ps         # check health
+#   docker-compose up -d
+#   docker-compose ps         # check health
+#   docker-compose logs -f backend frontend   # follow hot-reload output
+#
+# Editing backend/src or frontend/src on the host reloads the running
+# container automatically — no rebuild needed. A rebuild (`docker-compose up
+# -d --build`) is only required after changing package.json / lockfiles or
+# either Dockerfile.dev.
 #
 # Secrets are read from a local .env (gitignored). Sensible DEV defaults are
 # provided via ${VAR:-default}, so the stack also runs without a .env — but
@@ -77,7 +87,67 @@ services:
       retries: 5
       start_period: 10s
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: project03-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # Overrides backend/.env: inside the compose network, services reach
+      # each other by service name, not localhost.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-project_03}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis}@redis:6379
+      S3_ENDPOINT: http://minio:9000
+      PORT: "3000"
+      # tsc --watch's default fs.watch-based strategy misses some change
+      # events on Docker bind mounts; polling is slower but reliable here.
+      TSC_WATCHFILE: PriorityPollingInterval
+      TSC_WATCHDIRECTORY: DynamicPriorityPolling
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/test:/app/test
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: project03-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-4200}:4200"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - frontend_node_modules:/app/node_modules
+      - frontend_angular_cache:/app/.angular
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   pgdata:
   redisdata:
   miniodata:
+  backend_node_modules:
+  frontend_node_modules:
+  frontend_angular_cache:

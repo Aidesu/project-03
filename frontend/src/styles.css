@@ -1,41 +1,49 @@
 @import 'tailwindcss';
 
 /* ------------------------------------------------------------------ *
- * Design tokens — a calm, focused palette for a gamified job tracker. *
- * Indigo carries the product; amber is reserved for XP / streak.      *
+ * Design tokens — "carnet de quête": your job search kept like a      *
+ * field ledger. Ink navy carries the product; a wax-seal gold marks   *
+ * XP/rank, a muted stamp red marks streaks. No neon, no gradients.    *
  * ------------------------------------------------------------------ */
 @theme {
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
   --font-mono:
     'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
 
-  --color-brand-50: #eef1ff;
-  --color-brand-100: #e0e5ff;
-  --color-brand-200: #c7cfff;
-  --color-brand-300: #a5afff;
-  --color-brand-400: #8186fb;
-  --color-brand-500: #6a63f3;
-  --color-brand-600: #5b48e6;
-  --color-brand-700: #4d39ca;
-  --color-brand-800: #4031a3;
-  --color-brand-900: #372e81;
+  /* brand = ink navy ramp. Was a bright indigo; the dashboard now reads like an
+     official document (dossiers, stamps, ledgers) rather than a game HUD. */
+  --color-brand-50: #eef1f6;
+  --color-brand-100: #dce3ed;
+  --color-brand-200: #b9c8dc;
+  --color-brand-300: #8da2c2;
+  --color-brand-400: #5e7a9f;
+  --color-brand-500: #3d5a80;
+  --color-brand-600: #2e4763;
+  --color-brand-700: #223650;
+  --color-brand-800: #182740;
+  --color-brand-900: #101b2e;
 
-  --color-xp-400: #fbbf24;
-  --color-xp-500: #f59e0b;
-  --color-xp-600: #d97706;
+  /* xp = wax-seal gold. Reserved for XP, rank and unlocked achievements —
+     never used as a generic UI/button color, so it stays meaningful. */
+  --color-xp-400: #e4b95c;
+  --color-xp-500: #c7943a;
+  --color-xp-600: #9c6e22;
 
-  /* ---------------------------------------------------------------- *
-   * Aurora accent — a light blue → violet → pink gradient used on the *
-   * dashboard's level card, chart border/bars and activity heatmap.   *
-   * ---------------------------------------------------------------- */
-  --color-aurora-blue: #60a5fa;
-  --color-aurora-violet: #a78bfa;
-  --color-aurora-pink: #f472b6;
+  /* stamp = muted postmark red, used sparingly for streaks/urgency only. */
+  --color-stamp-400: #c65a52;
+  --color-stamp-500: #b23a34;
+  --color-stamp-600: #8f2a26;
+
+  /* aurora = dashboard accent dots for the activity ledger (dashboard-only). */
+  --color-aurora-blue: #3d5a80;
+  --color-aurora-violet: #6b5b95;
+  --color-aurora-pink: #b23a34;
 
   /* Layered elevation — replaces flat `shadow-sm` where a surface needs to lift. */
   --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px -14px rgba(15, 23, 42, 0.12);
-  --shadow-elevated:
-    0 24px 48px -20px rgba(96, 91, 230, 0.4), 0 8px 20px -10px rgba(15, 23, 42, 0.16);
+  --shadow-elevated: 0 24px 48px -20px rgba(16, 27, 46, 0.45), 0 8px 20px -10px rgba(15, 23, 42, 0.16);
 }
 
 @layer base {
@@ -115,6 +123,37 @@
 
   .xp-ring {
     transition: stroke-dashoffset 0.6s ease;
+  }
+
+  /* Fine engraved hatch on the ink-navy dossier card — a certificate/banknote
+     guilloché standing in for the generic blurred gradient blob. */
+  .ledger-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ledger-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    background-image: repeating-linear-gradient(
+      135deg,
+      white 0px,
+      white 1px,
+      transparent 1px,
+      transparent 11px
+    );
+    pointer-events: none;
+  }
+
+  /* The rank/level badge — a pressed wax seal, not a thin progress ring. */
+  .seal-disc {
+    background: radial-gradient(circle at 32% 26%, theme(--color-xp-400), theme(--color-xp-600));
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.4),
+      inset 0 -8px 12px rgba(0, 0, 0, 0.3),
+      0 8px 16px -6px rgba(0, 0, 0, 0.4);
   }
 }
 

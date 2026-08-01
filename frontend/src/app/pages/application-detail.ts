@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApplicationsService } from '../core/applications.service';
 import { ALL_STATUSES, STATUS_META } from '../core/application-status';
+import { AuthService } from '../core/auth.service';
+import { EmailTemplatesService } from '../core/email-templates.service';
 import {
   EMPLOYMENT_TYPE_OPTIONS,
   INTERVIEW_OUTCOME_LABEL,
@@ -14,7 +16,8 @@ import {
   WORK_MODE_OPTIONS,
   labelOf,
 } from '../core/enums';
-import { ApplicationDetail, ApplicationStatus } from '../core/models';
+import { ApplicationDetail, ApplicationStatus, EmailTemplate } from '../core/models';
+import { renderTemplate, TemplateVars } from '../core/template-vars';
 
 @Component({
   selector: 'app-application-detail',
@@ -25,6 +28,8 @@ export class ApplicationDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly applications = inject(ApplicationsService);
+  private readonly emailTemplatesApi = inject(EmailTemplatesService);
+  private readonly auth = inject(AuthService);
 
   readonly statusMeta = STATUS_META;
   readonly statuses = ALL_STATUSES;
@@ -43,13 +48,23 @@ export class ApplicationDetailPage {
   readonly updating = signal(false);
   readonly deleting = signal(false);
 
+  readonly templates = signal<EmailTemplate[]>([]);
+  readonly copied = signal(false);
+  readonly copyError = signal<string | null>(null);
+
   selectedStatus: ApplicationStatus = 'WISHLIST';
   note = '';
+  selectedTemplateId = '';
 
   private readonly id = this.route.snapshot.paramMap.get('id') ?? '';
 
   constructor() {
     this.reload();
+    this.emailTemplatesApi.list().subscribe({
+      next: (items) => this.templates.set(items),
+      // Non-fatal: the "copy an email" widget just stays empty.
+      error: () => {},
+    });
   }
 
   reload(): void {
@@ -93,6 +108,40 @@ export class ApplicationDetailPage {
       next: () => this.router.navigate(['/applications']),
       error: () => this.deleting.set(false),
     });
+  }
+
+  preview(d: ApplicationDetail): { subject: string; body: string } | null {
+    const t = this.templates().find((x) => x.id === this.selectedTemplateId);
+    if (!t) return null;
+    const vars = this.varsFor(d);
+    return { subject: renderTemplate(t.subject, vars), body: renderTemplate(t.body, vars) };
+  }
+
+  async copyEmail(d: ApplicationDetail): Promise<void> {
+    const p = this.preview(d);
+    if (!p) return;
+    this.copyError.set(null);
+    const text = `Objet : ${p.subject}\n\n${p.body}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2000);
+    } catch {
+      this.copyError.set(
+        'Impossible de copier automatiquement — sélectionne le texte manuellement.',
+      );
+    }
+  }
+
+  private varsFor(d: ApplicationDetail): TemplateVars {
+    const user = this.auth.user();
+    return {
+      poste: d.position,
+      entreprise: d.company?.name || d.companyName,
+      contact_prenom: d.primaryContact?.firstName,
+      contact_nom: d.primaryContact?.lastName,
+      mon_nom: user?.name || user?.email,
+    };
   }
 
   salaryText(d: ApplicationDetail): string | null {

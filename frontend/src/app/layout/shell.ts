@@ -22,6 +22,8 @@ export class Shell {
   readonly nav: NavItem[] = [
     { label: 'Tableau de bord', path: '/', icon: '◈' },
     { label: 'Candidatures', path: '/applications', icon: '▤' },
+    { label: 'Découvrir', path: '/discover', icon: '◎' },
+    { label: 'Modèles de mail', path: '/email-templates', icon: '✉' },
     { label: 'Progression', path: '/progression', icon: '✦' },
   ];
 

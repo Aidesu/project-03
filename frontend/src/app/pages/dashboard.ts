@@ -13,7 +13,6 @@ import { ApplicationsService } from '../core/applications.service';
 import { AuthService } from '../core/auth.service';
 import { GamificationService } from '../core/gamification.service';
 import { DailyApplicationStat, GamificationProfile } from '../core/models';
-import { RING_CIRCUMFERENCE, ringOffset } from '../core/xp-ring';
 
 const XP_REASON_LABEL: Record<string, string> = {
   APPLICATION_CREATED: 'Candidature ajoutée',
@@ -29,18 +28,18 @@ const XP_REASON_LABEL: Record<string, string> = {
   OTHER: 'Activité',
 };
 
-// A small accent dot per reason — identity without a legend, in the activity feed.
+// A small accent dot per reason — identity without a legend, in the ledger feed.
 const XP_REASON_ACCENT: Record<string, string> = {
-  APPLICATION_CREATED: 'bg-aurora-blue/60',
-  APPLICATION_SUBMITTED: 'bg-aurora-blue',
+  APPLICATION_CREATED: 'bg-brand-300',
+  APPLICATION_SUBMITTED: 'bg-brand-500',
   INTERVIEW_SCHEDULED: 'bg-aurora-violet/60',
   INTERVIEW_COMPLETED: 'bg-aurora-violet',
   OFFER_RECEIVED: 'bg-emerald-400',
   OFFER_ACCEPTED: 'bg-emerald-600',
-  STREAK_BONUS: 'bg-aurora-pink',
-  DAILY_GOAL: 'bg-aurora-blue/70',
+  STREAK_BONUS: 'bg-stamp-500',
+  DAILY_GOAL: 'bg-brand-400',
   WEEKLY_GOAL: 'bg-aurora-violet',
-  ACHIEVEMENT_UNLOCKED: 'bg-aurora-pink',
+  ACHIEVEMENT_UNLOCKED: 'bg-xp-500',
   OTHER: 'bg-slate-300',
 };
 
@@ -48,8 +47,9 @@ const XP_REASON_ACCENT: Record<string, string> = {
 const HEATMAP_WEEKS = 12;
 const HEATMAP_DAYS = HEATMAP_WEEKS * 7;
 
-// One CSS color class per activity level (0 = none), light blue → pink.
-const HEAT_LEVEL_CLASS = ['bg-slate-100', 'bg-[#BFE0FF]', 'bg-[#8FB4FA]', 'bg-[#B78BEF]', 'bg-[#F472B6]'];
+// One CSS color class per activity level (0 = none) — ink density rising to a
+// gold "stamped" peak on the busiest days, echoing the seal/medal palette.
+const HEAT_LEVEL_CLASS = ['bg-slate-100', 'bg-[#C9D5E8]', 'bg-[#8FA3C0]', 'bg-brand-500', 'bg-xp-500'];
 
 function heatLevel(count: number): number {
   if (count <= 0) return 0;
@@ -156,14 +156,19 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   readonly tooltipWidth = 116;
   readonly tooltipHeight = 34;
 
+  /** Fill % of the ledger progress bar toward the next rank. */
   readonly ringPct = computed(() => {
     const p = this.profile();
     if (!p || p.xpForNextLevel === 0) return 0;
     return Math.min(100, Math.round((p.xpIntoLevel / p.xpForNextLevel) * 100));
   });
 
-  readonly ringOffsetValue = computed(() => ringOffset(this.ringPct(), RING_CIRCUMFERENCE));
-  readonly ringCircumference = RING_CIRCUMFERENCE;
+  /** Last 7 days as a punch-card row (true = at least one application that day). */
+  readonly streakPunches = computed(() => {
+    const stats = this.chartStats();
+    const padded = stats.length < 7 ? [...Array(7 - stats.length).fill(null), ...stats] : stats;
+    return padded.map((s) => (s ? s.count > 0 : false));
+  });
 
   readonly firstName = computed(() => {
     const u = this.user();
@@ -171,10 +176,40 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     return base.split(/[@\s]/)[0];
   });
 
+  readonly initials = computed(() => {
+    const u = this.user();
+    if (!u) return '?';
+    const source = u.name?.trim() || u.email;
+    return source.slice(0, 2).toUpperCase();
+  });
+
   /** Just the last 7 days, for the bar chart — the heatmap uses the full range. */
   private readonly chartStats = computed(() => (this.dailyStats() ?? []).slice(-7));
 
   readonly heatmapWeeks = computed(() => buildHeatmapWeeks(this.dailyStats() ?? []));
+
+  /** One label (or null) per week column — the short month name, shown only where the month changes. */
+  readonly heatmapMonthLabels = computed<(string | null)[]>(() => {
+    const labels: (string | null)[] = [];
+    let lastMonth = -1;
+    for (const week of this.heatmapWeeks()) {
+      const firstCell = week.find((c): c is HeatCell => c !== null);
+      if (!firstCell) {
+        labels.push(null);
+        continue;
+      }
+      const month = new Date(`${firstCell.date}T00:00:00Z`).getUTCMonth();
+      if (month === lastMonth) {
+        labels.push(null);
+        continue;
+      }
+      lastMonth = month;
+      labels.push(new Date(`${firstCell.date}T00:00:00Z`).toLocaleDateString('fr-FR', { month: 'short' }));
+    }
+    return labels;
+  });
+
+  readonly heatmapDayLabels = ['Lun', '', 'Mer', '', 'Ven', '', ''];
 
   private readonly axisMax = computed(() => {
     return niceMax(Math.max(0, ...this.chartStats().map((d) => d.count)));

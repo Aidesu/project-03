@@ -23,42 +23,73 @@ project-03/
 
 ## Prerequisites
 
-- Node.js v24.15+ (or v22.22.3+) see `.nvmrc` (`nvm use`)
-- pnpm 10+ (`corepack enable` or `npm i -g pnpm`)
-- Docker + Docker Compose v2 (for the local infrastructure — see below)
+- Docker + Docker Compose v2 — the only requirement to run the full stack.
+- Node.js v24.15+ (or v22.22.3+) / pnpm 10+ are only needed if you run a service
+  **outside** Docker (see [Running without Docker](#running-without-docker)).
 
-## Infrastructure (Docker)
+## Running the full stack (Docker)
 
-The local data layer runs in Docker Compose (defined in `docker-compose.yml` at the repo root):
+Everything — Postgres, Redis, MinIO, the NestJS API, and the Angular dev server — runs
+in Docker Compose (`docker-compose.yml` at the repo root). Both app containers build
+from a dev `Dockerfile.dev`, bind-mount `src/` from the host, and hot-reload on save.
 
-| Service | Image            | Purpose                                                        | Ports          |
-| ------- | ---------------- | -------------------------------------------------------------- | -------------- |
-| `db`    | `postgres:16`    | Primary database (used by Prisma)                              | `5432`         |
-| `redis` | `redis:7`        | Cache / sessions / job queue (reminders & follow-ups)          | `6379`         |
-| `minio` | `minio/minio`    | S3-compatible object storage (CVs, cover letters, offer PDFs)  | `9000`, `9001` |
+| Service    | Image / build          | Purpose                                                       | URL / Port                       |
+| ---------- | ----------------------- | -------------------------------------------------------------- | --------------------------------- |
+| `db`       | `postgres:16-alpine`    | Primary database (used by Prisma)                               | `5432`                            |
+| `redis`    | `redis:7-alpine`        | Cache / sessions / job queue (reminders & follow-ups)            | `6379`                             |
+| `minio`    | `minio/minio`           | S3-compatible object storage (CVs, cover letters, offer PDFs)    | `9000` (API), `9001` (console)    |
+| `backend`  | `backend/Dockerfile.dev`| NestJS API (`nest start --watch` under the hood)                 | http://localhost:3000/api         |
+| `frontend` | `frontend/Dockerfile.dev`| Angular app (`ng serve`)                                        | http://localhost:4200             |
 
 ```bash
-cp .env.example .env          # root .env — adjust secrets (gitignored)
-docker compose up -d          # start db + redis + minio
-docker compose ps             # all services should be "healthy"
+cp .env.example .env                    # root .env — Docker Compose secrets (gitignored)
+cp backend/.env.example backend/.env    # backend app secrets (JWT, CSRF…) — gitignored
+
+docker compose up -d --build            # build images and start the whole stack
+docker compose ps                       # all services should become "healthy"
+
+# First run only (and after any new Prisma migration):
+docker compose exec backend pnpm prisma:migrate
 ```
 
+- App: http://localhost:4200 — Angular proxies `/api` to the `backend` container.
+- API directly: http://localhost:3000/api
 - MinIO console: http://localhost:9001 (login = `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`).
-- Data persists in named volumes (`pgdata`, `redisdata`, `miniodata`). To wipe everything: `docker compose down -v`.
+- Data persists in named volumes (`pgdata`, `redisdata`, `miniodata`,
+  `backend_node_modules`, `frontend_node_modules`, `frontend_angular_cache`).
+  To wipe everything (including the database): `docker compose down -v`.
 
-> **Security** — the defaults in `.env.example` are **dev-only**. Before any non-local
-> deployment, set strong unique secrets and run the volumes on an encrypted disk
-> (encryption at rest). Application-level data isolation (each user only sees their own
-> data) is enforced in the API layer.
+Useful day-to-day commands:
 
-## Getting started
+```bash
+docker compose logs -f backend frontend   # follow hot-reload / app logs
+docker compose exec backend sh            # shell into the API container
+docker compose exec backend pnpm prisma:studio   # Prisma Studio (bind it to a port if needed)
+docker compose up -d --build              # rebuild after editing package.json, a lockfile,
+                                           # or either Dockerfile.dev
+```
+
+Editing `backend/src` or `frontend/src` on the host reloads the corresponding container
+automatically — no rebuild needed for source-only changes.
+
+> **Security** — the defaults in `.env.example` / `backend/.env.example` are **dev-only**.
+> Before any non-local deployment: set strong unique secrets, run the data volumes on an
+> encrypted disk (encryption at rest), and never reuse `Dockerfile.dev` (hot-reload, no
+> multi-stage build) in production. Application-level data isolation (each user only sees
+> their own data) is enforced in the API layer.
+
+## Running without Docker
+
+Only needed if you want to run a service directly on the host (e.g. for debugging). You
+still need `db` / `redis` / `minio` running somewhere — either via `docker compose up -d
+db redis minio`, or your own local instances.
 
 ### 1. Backend
 
 ```bash
 cd backend
 pnpm install
-cp .env.example .env          # then adjust DATABASE_URL / REDIS_URL / S3_*
+cp .env.example .env          # then adjust DATABASE_URL / REDIS_URL / S3_* to point at localhost
 pnpm prisma:migrate           # creates tables from the Prisma schema
 pnpm start:dev                # http://localhost:3000
 ```
@@ -68,7 +99,7 @@ pnpm start:dev                # http://localhost:3000
 ```bash
 cd frontend
 pnpm install
-pnpm start                    # http://localhost:4200
+pnpm start                    # http://localhost:4200 — proxies /api to localhost:3000
 ```
 
 ## Environment variables (backend)

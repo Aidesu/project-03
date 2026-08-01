@@ -9,6 +9,8 @@ import { AuthModule } from './auth/auth.module';
 import { CompaniesModule } from './companies/companies.module';
 import { validateEnv } from './config/env.validation';
 import { ContactsModule } from './contacts/contacts.module';
+import { DiscoverModule } from './discover/discover.module';
+import { EmailTemplatesModule } from './email-templates/email-templates.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { InterviewsModule } from './interviews/interviews.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -28,9 +30,11 @@ import { UsersModule } from './users/users.module';
     ApplicationsModule,
     CompaniesModule,
     ContactsModule,
+    DiscoverModule,
     InterviewsModule,
     RemindersModule,
     TagsModule,
+    EmailTemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

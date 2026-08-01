@@ -27,8 +27,21 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/applications').then((m) => m.Applications),
       },
       {
+        path: 'discover',
+        loadComponent: () => import('./pages/discover').then((m) => m.Discover),
+      },
+      {
+        path: 'discover/:id',
+        loadComponent: () => import('./pages/discover-detail').then((m) => m.DiscoverDetail),
+      },
+      {
         path: 'progression',
         loadComponent: () => import('./pages/progression').then((m) => m.Progression),
+      },
+      {
+        path: 'email-templates',
+        loadComponent: () =>
+          import('./pages/email-templates').then((m) => m.EmailTemplates),
       },
       {
         path: 'applications/new',

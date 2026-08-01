@@ -1,4 +1,11 @@
-import { ApplicationSource, EmploymentType, Priority, SalaryPeriod, WorkMode } from './models';
+import {
+  ApplicationSource,
+  EmailTemplateCategory,
+  EmploymentType,
+  Priority,
+  SalaryPeriod,
+  WorkMode,
+} from './models';
 
 export interface Option<T extends string> {
   value: T;
@@ -43,6 +50,15 @@ export const SALARY_PERIOD_OPTIONS: Option<SalaryPeriod>[] = [
   { value: 'DAY', label: '/ jour' },
   { value: 'MONTH', label: '/ mois' },
   { value: 'YEAR', label: '/ an' },
+];
+
+export const EMAIL_TEMPLATE_CATEGORY_OPTIONS: Option<EmailTemplateCategory>[] = [
+  { value: 'FOLLOW_UP', label: 'Relance' },
+  { value: 'THANK_YOU', label: 'Remerciement' },
+  { value: 'COLD_OUTREACH', label: 'Candidature spontanée' },
+  { value: 'OFFER_NEGOTIATION', label: "Négociation d'offre" },
+  { value: 'WITHDRAWAL', label: 'Retrait de candidature' },
+  { value: 'OTHER', label: 'Autre' },
 ];
 
 /** Resolve the French label for an enum value, or '' when unset/unknown. */

@@ -117,6 +117,15 @@ enum ReminderType {
   CUSTOM
 }
 
+enum EmailTemplateCategory {
+  FOLLOW_UP // relance sans nouvelles
+  THANK_YOU // remerciement post-entretien
+  COLD_OUTREACH // candidature spontanée
+  OFFER_NEGOTIATION // négociation d'offre
+  WITHDRAWAL // retrait de candidature
+  OTHER
+}
+
 enum XpReason {
   APPLICATION_CREATED
   APPLICATION_SUBMITTED
@@ -152,14 +161,18 @@ model User {
   gamification GamificationProfile?
 
   // Domain (all per-user isolated)
-  companies    Company[]
-  contacts     Contact[]
-  applications JobApplication[]
-  documents    Document[]
-  tags         Tag[]
-  reminders    Reminder[]
-  xpEvents     XpEvent[]
-  achievements UserAchievement[]
+  companies      Company[]
+  contacts       Contact[]
+  applications   JobApplication[]
+  documents      Document[]
+  tags           Tag[]
+  reminders      Reminder[]
+  emailTemplates EmailTemplate[]
+  xpEvents       XpEvent[]
+  achievements   UserAchievement[]
+
+  // Discover: reviews this user authored — never listed to other users via any API
+  companyReviews CompanyReview[]
 }
 
 // Refresh-token sessions: enables rotation, revocation and reuse/theft detection.
@@ -212,7 +225,14 @@ model Company {
   applications JobApplication[]
   contacts     Contact[]
 
+  // Discover: opportunistic link to the shared, cross-user directory entry
+  // (safe-field subset only — never `notes`). Null until the first write
+  // after this feature shipped links it. See DirectoryLinkingService.
+  directoryCompanyId String?
+  directoryCompany   DirectoryCompany? @relation(fields: [directoryCompanyId], references: [id], onDelete: SetNull)
+
   @@index([userId])
+  @@index([directoryCompanyId])
 }
 
 model Contact {
@@ -383,6 +403,66 @@ model Reminder {
 
   @@index([userId, dueAt])
   @@index([applicationId])
+}
+
+// Reusable, plain-text mail templates with {{variable}} placeholders
+// (poste, entreprise, contact_prenom, contact_nom, mon_nom) interpolated
+// client-side from an application/contact when copied.
+model EmailTemplate {
+  id        String                @id @default(uuid())
+  userId    Int
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  EmailTemplateCategory @default(OTHER)
+  name      String
+  subject   String
+  body      String
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@index([userId])
+}
+
+// =====================================================================
+// Shared company directory ("Discover") — deliberately separate from
+// Company/Contact/JobApplication. DiscoverService must never query those
+// three models; see discover.service.ts header comment.
+// =====================================================================
+
+model DirectoryCompany {
+  id             String   @id @default(uuid())
+  name           String
+  website        String?
+  websiteDomain  String?  // normalized host, computed in app code (directory-normalize.ts)
+  normalizedName String   // lowercase/trimmed/diacritic-stripped fallback match key
+  industry       String?
+  location       String?
+  size           String?
+  logoUrl        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  companies Company[]       // linked private rows — never `include` this from Discover reads
+  reviews   CompanyReview[] // never exposed as a list — aggregates only
+
+  @@unique([websiteDomain])
+  @@index([normalizedName])
+}
+
+// One review per user per company (rating + response signal only — no free
+// text, never listed publicly). Discover only ever surfaces the aggregate.
+model CompanyReview {
+  id                 String           @id @default(uuid())
+  userId             Int
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  directoryCompanyId String
+  directoryCompany   DirectoryCompany @relation(fields: [directoryCompanyId], references: [id], onDelete: Cascade)
+  rating             Int // 1-5, validated in SubmitReviewDto (app-layer only, same convention as JobApplication.excitement)
+  didRespond         Boolean
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@unique([userId, directoryCompanyId]) // one review per user per company; also the upsert() key
+  @@index([directoryCompanyId]) // aggregate (avg rating / response rate / count) queries group by this
 }
 
 // =====================================================================

@@ -1,0 +1,31 @@
+# Dev-only image: hot-reload via `nest start --watch`, source bind-mounted
+# by docker-compose.yml. Not intended for production (see start:prod / a
+# future multi-stage Dockerfile for that).
+
+FROM node:24.18.0-bookworm-slim
+
+# Prisma's query engine dynamically links libssl; bookworm-slim doesn't ship
+# it, and Prisma's fallback guess (openssl-1.1.x) can silently mismatch,
+# surfacing as a bogus "can't reach database" error instead of a load error.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pinned to match frontend/package.json's packageManager, keeping both
+# services on the same pnpm version.
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
+WORKDIR /app
+
+# Install first, with only the manifests + prisma schema (postinstall runs
+# `prisma generate`, which needs schema.prisma present). Keeps the layer
+# cached across source-only changes.
+COPY package.json pnpm-lock.yaml ./
+COPY prisma ./prisma
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["pnpm", "start:docker"]

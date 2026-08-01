@@ -185,6 +185,62 @@ export interface DailyApplicationStat {
   count: number;
 }
 
+// ---- Email templates ------------------------------------------------------
+
+export type EmailTemplateCategory =
+  | 'FOLLOW_UP'
+  | 'THANK_YOU'
+  | 'COLD_OUTREACH'
+  | 'OFFER_NEGOTIATION'
+  | 'WITHDRAWAL'
+  | 'OTHER';
+
+export interface EmailTemplate {
+  id: string;
+  category: EmailTemplateCategory;
+  name: string;
+  subject: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---- Discover -------------------------------------------------------------
+
+export interface DiscoverCompanyAggregate {
+  avgRating: number | null;
+  responseRate: number | null; // 0..1, null when reviewCount is 0
+  reviewCount: number;
+}
+
+/** Shape returned by `GET /api/discover` and `GET /api/discover/:id` — safe subset only. */
+export interface DiscoverCompany {
+  id: string;
+  name: string;
+  website: string | null;
+  industry: string | null;
+  location: string | null;
+  size: string | null;
+  logoUrl: string | null;
+  aggregate: DiscoverCompanyAggregate;
+}
+
+/** Shape returned by `GET /api/discover/:id/my-review`. */
+export interface MyReviewContext {
+  eligible: boolean;
+  suggestedDidRespond: boolean | null;
+  existingReview: { rating: number; didRespond: boolean } | null;
+}
+
+/** Shape returned by `POST /api/discover/:id/reviews`. */
+export interface CompanyReviewRef {
+  id: string;
+  rating: number;
+  didRespond: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ---- Generic paginated envelope ----------------------------------------
 
 export interface Paginated<T> {
