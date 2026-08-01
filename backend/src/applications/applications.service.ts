@@ -10,6 +10,7 @@ import {
   XpReason,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CompaniesService } from '../companies/companies.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateApplicationDto } from './dto/create-application.dto';
@@ -80,6 +81,7 @@ export class ApplicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
+    private readonly companies: CompaniesService,
   ) {}
 
   async create(userId: number, dto: CreateApplicationDto) {
@@ -92,12 +94,14 @@ export class ApplicationsService {
 
     const status = dto.status ?? ApplicationStatus.WISHLIST;
     const now = new Date();
+    const companyId =
+      dto.companyId ?? (await this.resolveCompanyId(userId, dto.companyName));
 
     const application = await this.prisma.jobApplication.create({
       data: {
         userId,
         position: dto.position,
-        companyId: dto.companyId ?? null,
+        companyId,
         companyName: dto.companyName ?? null,
         description: dto.description ?? null,
         status,
@@ -203,10 +207,19 @@ export class ApplicationsService {
       dto.tagIds,
     );
 
+    // Client never sends companyId today (no company picker yet) — only
+    // companyName free text. Resolve/create the matching private Company so
+    // it stays linked into the Discover directory, same as create().
+    // An explicit companyId always wins over this auto-resolution.
+    const companyId =
+      dto.companyId === undefined && dto.companyName !== undefined
+        ? await this.resolveCompanyId(userId, dto.companyName)
+        : dto.companyId;
+
     // `status` is intentionally omitted — use changeStatus() so history/XP are tracked.
     const data: Prisma.JobApplicationUncheckedUpdateInput = {
       position: dto.position,
-      companyId: dto.companyId,
+      companyId,
       companyName: dto.companyName,
       description: dto.description,
       source: dto.source,
@@ -326,6 +339,29 @@ export class ApplicationsService {
   }
 
   // --- helpers ---
+
+  /**
+   * Find-or-create the user's private Company matching this free-text name
+   * (case-insensitive) so it gets linked into the shared Discover directory
+   * via CompaniesService, instead of applications only ever storing a
+   * disconnected string. Returns null for a blank/absent name.
+   */
+  private async resolveCompanyId(
+    userId: number,
+    companyName: string | null | undefined,
+  ): Promise<string | null> {
+    const name = companyName?.trim();
+    if (!name) return null;
+
+    const existing = await this.prisma.company.findFirst({
+      where: { userId, name: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+
+    const created = await this.companies.create(userId, { name });
+    return created.id;
+  }
 
   private async findOwnedOrThrow(
     userId: number,
