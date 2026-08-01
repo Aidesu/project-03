@@ -136,4 +136,15 @@ export class TokenService {
       data: { revokedAt: new Date() },
     });
   }
+
+  /**
+   * Revoke every active session for a user — used after a password change or
+   * account deletion, where every device must be forced to re-authenticate.
+   */
+  async revokeAllSessionsForUser(userId: number): Promise<void> {
+    await this.prisma.refreshSession.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
 }

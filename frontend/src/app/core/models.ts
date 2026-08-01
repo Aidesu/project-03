@@ -6,7 +6,19 @@ export interface User {
   id: number;
   email: string;
   name: string | null;
+  avatarUrl: string | null;
   role: Role;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSettings {
+  id: string;
+  userId: number;
+  locale: string;
+  timezone: string;
+  weeklyApplicationGoal: number;
+  emailRemindersEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }

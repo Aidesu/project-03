@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { toSafeUser } from '../users/users.service';
+import { UsersService } from '../users/users.service';
 import { REFRESH_TOKEN_COOKIE } from './auth.constants';
 import { AuthService } from './auth.service';
 import { clearAuthCookies, setAccessCookie, setRefreshCookie } from './cookies';
@@ -20,17 +20,15 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import type { AccessTokenPayload, RefreshContext } from './token.service';
-
-function refreshContext(req: Request): RefreshContext {
-  return { userAgent: req.headers['user-agent'] ?? null, ip: req.ip ?? null };
-}
+import { refreshContext } from './refresh-context.util';
+import type { AccessTokenPayload } from './token.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly csrf: CsrfService,
+    private readonly users: UsersService,
   ) {}
 
   /** Bootstrap CSRF: sets the XSRF-TOKEN cookie the SPA echoes back as a header. */
@@ -55,7 +53,7 @@ export class AuthController {
     const result = await this.auth.register(dto, refreshContext(req));
     setAccessCookie(res, result.accessToken);
     setRefreshCookie(res, result.refreshToken);
-    return { user: toSafeUser(result.user) };
+    return { user: await this.users.presentUser(result.user) };
   }
 
   @Public()
@@ -70,7 +68,7 @@ export class AuthController {
     const result = await this.auth.login(dto, refreshContext(req));
     setAccessCookie(res, result.accessToken);
     setRefreshCookie(res, result.refreshToken);
-    return { user: toSafeUser(result.user) };
+    return { user: await this.users.presentUser(result.user) };
   }
 
   @Public()
@@ -89,7 +87,7 @@ export class AuthController {
       const result = await this.auth.refresh(raw, refreshContext(req));
       setAccessCookie(res, result.accessToken);
       setRefreshCookie(res, result.refreshToken);
-      return { user: toSafeUser(result.user) };
+      return { user: await this.users.presentUser(result.user) };
     } catch (err) {
       clearAuthCookies(res);
       throw err;

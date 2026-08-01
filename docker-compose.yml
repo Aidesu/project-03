@@ -101,6 +101,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-project_03}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis}@redis:6379
       S3_ENDPOINT: http://minio:9000
+      # S3_ENDPOINT above is the container-network hostname, used for the
+      # backend's own PUT/DELETE/HEAD calls to MinIO. Presigned URLs must
+      # instead be signed against an endpoint the *browser* can resolve, so
+      # this is deliberately the host-mapped port, not the service name.
+      S3_PUBLIC_ENDPOINT: http://localhost:${MINIO_API_PORT:-9000}
       PORT: "3000"
       # tsc --watch's default fs.watch-based strategy misses some change
       # events on Docker bind mounts; polling is slower but reliable here.

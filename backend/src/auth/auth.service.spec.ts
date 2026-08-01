@@ -17,6 +17,7 @@ function buildUser(overrides: Partial<User> = {}): User {
     email: 'user@example.com',
     name: null,
     passwordHash: 'placeholder',
+    avatarStorageKey: null,
     role: Role.USER,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -25,7 +26,12 @@ function buildUser(overrides: Partial<User> = {}): User {
 }
 
 describe('AuthService', () => {
-  let users: { findByEmail: jest.Mock; findById: jest.Mock; create: jest.Mock };
+  let users: {
+    findByEmail: jest.Mock;
+    findById: jest.Mock;
+    create: jest.Mock;
+    presentUser: jest.Mock;
+  };
   let tokens: {
     issueAccessToken: jest.Mock;
     issueRefreshSession: jest.Mock;
@@ -35,7 +41,17 @@ describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(() => {
-    users = { findByEmail: jest.fn(), findById: jest.fn(), create: jest.fn() };
+    users = {
+      findByEmail: jest.fn(),
+      findById: jest.fn(),
+      create: jest.fn(),
+      presentUser: jest.fn().mockImplementation((user: User) => {
+        const safe: Record<string, unknown> = { ...user };
+        delete safe.passwordHash;
+        delete safe.avatarStorageKey;
+        return Promise.resolve({ ...safe, avatarUrl: null });
+      }),
+    };
     tokens = {
       issueAccessToken: jest.fn().mockResolvedValue('access.jwt'),
       issueRefreshSession: jest.fn().mockResolvedValue('refresh-raw'),

@@ -27,6 +27,8 @@ export class Shell {
     { label: 'Progression', path: '/progression', icon: '✦' },
   ];
 
+  readonly avatarUrl = computed(() => this.user()?.avatarUrl ?? null);
+
   readonly initials = computed(() => {
     const u = this.user();
     if (!u) return '?';

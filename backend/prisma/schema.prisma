@@ -146,10 +146,11 @@ enum XpReason {
 
 model User {
   id           Int      @id @default(autoincrement())
-  email        String   @unique
-  name         String?
-  passwordHash String // argon2id hash — never returned to clients
-  role         Role     @default(USER)
+  email            String   @unique
+  name             String?
+  passwordHash     String // argon2id hash — never returned to clients
+  avatarStorageKey String? // opaque S3 object key; never returned to clients (presigned URL is derived from it)
+  role             Role     @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

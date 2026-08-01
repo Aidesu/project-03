@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DirectoryCompany, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { normalizeCompanyName, normalizeWebsiteDomain } from './directory-normalize';
+import {
+  normalizeCompanyName,
+  normalizeWebsiteDomain,
+} from './directory-normalize';
 
 export interface DirectoryLinkInput {
   name: string;
@@ -27,8 +30,12 @@ export class DirectoryLinkingService {
     const normalizedName = normalizeCompanyName(input.name);
 
     const existing = websiteDomain
-      ? await this.prisma.directoryCompany.findUnique({ where: { websiteDomain } })
-      : await this.prisma.directoryCompany.findFirst({ where: { normalizedName } });
+      ? await this.prisma.directoryCompany.findUnique({
+          where: { websiteDomain },
+        })
+      : await this.prisma.directoryCompany.findFirst({
+          where: { normalizedName },
+        });
 
     if (existing) {
       await this.enrichIfNeeded(existing, input);
@@ -67,13 +74,19 @@ export class DirectoryLinkingService {
     input: DirectoryLinkInput,
   ): Promise<void> {
     const data: Prisma.DirectoryCompanyUpdateInput = {};
-    if (existing.industry == null && input.industry != null) data.industry = input.industry;
-    if (existing.location == null && input.location != null) data.location = input.location;
+    if (existing.industry == null && input.industry != null)
+      data.industry = input.industry;
+    if (existing.location == null && input.location != null)
+      data.location = input.location;
     if (existing.size == null && input.size != null) data.size = input.size;
-    if (existing.logoUrl == null && input.logoUrl != null) data.logoUrl = input.logoUrl;
+    if (existing.logoUrl == null && input.logoUrl != null)
+      data.logoUrl = input.logoUrl;
 
     if (Object.keys(data).length > 0) {
-      await this.prisma.directoryCompany.update({ where: { id: existing.id }, data });
+      await this.prisma.directoryCompany.update({
+        where: { id: existing.id },
+        data,
+      });
     }
   }
 }

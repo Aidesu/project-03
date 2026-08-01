@@ -91,8 +91,10 @@ export class CompaniesService {
         ? await this.directoryLinking.linkToDirectory({
             name: dto.name ?? current.name,
             website: dto.website !== undefined ? dto.website : current.website,
-            industry: dto.industry !== undefined ? dto.industry : current.industry,
-            location: dto.location !== undefined ? dto.location : current.location,
+            industry:
+              dto.industry !== undefined ? dto.industry : current.industry,
+            location:
+              dto.location !== undefined ? dto.location : current.location,
             size: dto.size !== undefined ? dto.size : current.size,
             logoUrl: dto.logoUrl !== undefined ? dto.logoUrl : current.logoUrl,
           })

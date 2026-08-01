@@ -183,6 +183,8 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     return source.slice(0, 2).toUpperCase();
   });
 
+  readonly avatarUrl = computed(() => this.user()?.avatarUrl ?? null);
+
   /** Just the last 7 days, for the bar chart — the heatmap uses the full range. */
   private readonly chartStats = computed(() => (this.dailyStats() ?? []).slice(-7));
 

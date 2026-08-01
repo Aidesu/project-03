@@ -3,14 +3,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DiscoverService } from './discover.service';
 import { QueryDiscoverDto } from './dto/query-discover.dto';
 
-function buildQuery(overrides: Partial<QueryDiscoverDto> = {}): QueryDiscoverDto {
+function buildQuery(
+  overrides: Partial<QueryDiscoverDto> = {},
+): QueryDiscoverDto {
   return {
     page: 1,
     pageSize: 20,
     sortOrder: 'asc',
     sortBy: 'name',
     ...overrides,
-  } as QueryDiscoverDto;
+  };
 }
 
 const SAFE_COMPANY_ROW = {
@@ -28,7 +30,11 @@ const SAFE_COMPANY_ROW = {
 describe('DiscoverService', () => {
   let prisma: {
     $transaction: jest.Mock;
-    directoryCompany: { findMany: jest.Mock; count: jest.Mock; findUnique: jest.Mock };
+    directoryCompany: {
+      findMany: jest.Mock;
+      count: jest.Mock;
+      findUnique: jest.Mock;
+    };
     companyReview: { groupBy: jest.Mock };
   };
   let service: DiscoverService;
@@ -36,7 +42,11 @@ describe('DiscoverService', () => {
   beforeEach(() => {
     prisma = {
       $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
-      directoryCompany: { findMany: jest.fn(), count: jest.fn(), findUnique: jest.fn() },
+      directoryCompany: {
+        findMany: jest.fn(),
+        count: jest.fn(),
+        findUnique: jest.fn(),
+      },
       companyReview: { groupBy: jest.fn() },
     };
     service = new DiscoverService(prisma as unknown as PrismaService);
@@ -45,7 +55,9 @@ describe('DiscoverService', () => {
   describe('findOne', () => {
     it('throws NotFoundException when the company does not exist', async () => {
       prisma.directoryCompany.findUnique.mockResolvedValue(null);
-      await expect(service.findOne('missing')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.findOne('missing')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('selects only the safe field subset — never the private companies/reviews relations', async () => {
@@ -90,12 +102,18 @@ describe('DiscoverService', () => {
     it('computes avgRating/reviewCount/responseRate from the grouped aggregates', async () => {
       prisma.directoryCompany.findUnique.mockResolvedValue(SAFE_COMPANY_ROW);
       prisma.companyReview.groupBy
-        .mockResolvedValueOnce([{ directoryCompanyId: 'dc-1', _avg: { rating: 4.5 }, _count: 4 }])
+        .mockResolvedValueOnce([
+          { directoryCompanyId: 'dc-1', _avg: { rating: 4.5 }, _count: 4 },
+        ])
         .mockResolvedValueOnce([{ directoryCompanyId: 'dc-1', _count: 3 }]);
 
       const result = await service.findOne('dc-1');
 
-      expect(result.aggregate).toEqual({ avgRating: 4.5, reviewCount: 4, responseRate: 0.75 });
+      expect(result.aggregate).toEqual({
+        avgRating: 4.5,
+        reviewCount: 4,
+        responseRate: 0.75,
+      });
     });
 
     it('returns a null-ish empty aggregate when there are no reviews yet', async () => {
@@ -104,7 +122,11 @@ describe('DiscoverService', () => {
 
       const result = await service.findOne('dc-1');
 
-      expect(result.aggregate).toEqual({ avgRating: null, reviewCount: 0, responseRate: null });
+      expect(result.aggregate).toEqual({
+        avgRating: null,
+        reviewCount: 0,
+        responseRate: null,
+      });
     });
   });
 

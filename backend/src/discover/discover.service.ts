@@ -31,7 +31,9 @@ export interface CompanyAggregate {
   reviewCount: number;
 }
 
-export type DiscoverCompany = DirectoryCompanySafe & { aggregate: CompanyAggregate };
+export type DiscoverCompany = DirectoryCompanySafe & {
+  aggregate: CompanyAggregate;
+};
 
 const EMPTY_AGGREGATE: CompanyAggregate = {
   avgRating: null,
@@ -46,7 +48,10 @@ const EMPTY_AGGREGATE: CompanyAggregate = {
  * second, independent place a leak of `companies`/`reviews` would have to
  * get past, since only these named fields are ever read off `row`.
  */
-function toSafeCompany(row: DirectoryCompanySafe, aggregate: CompanyAggregate): DiscoverCompany {
+function toSafeCompany(
+  row: DirectoryCompanySafe,
+  aggregate: CompanyAggregate,
+): DiscoverCompany {
   return {
     id: row.id,
     name: row.name,
@@ -113,7 +118,9 @@ export class DiscoverService {
   }
 
   /** On-the-fly aggregate (avg rating / response rate / count) — no denormalized counters. */
-  private async aggregatesFor(ids: string[]): Promise<Map<string, CompanyAggregate>> {
+  private async aggregatesFor(
+    ids: string[],
+  ): Promise<Map<string, CompanyAggregate>> {
     if (ids.length === 0) return new Map();
 
     // Two independent read-only aggregates — Promise.all (not $transaction:
@@ -134,7 +141,9 @@ export class DiscoverService {
       }),
     ]);
 
-    const respondedById = new Map(responded.map((r) => [r.directoryCompanyId, r._count]));
+    const respondedById = new Map(
+      responded.map((r) => [r.directoryCompanyId, r._count]),
+    );
 
     return new Map(
       overall.map((row) => {

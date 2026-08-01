@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CompanyReviewsService } from './company-reviews.service';
@@ -27,7 +35,10 @@ export class DiscoverController {
 
   // Everything below is ownership-scoped, same as the rest of the app.
   @Get(':id/my-review')
-  getMyReview(@CurrentUser('sub') userId: number, @Param('id', ParseUUIDPipe) id: string) {
+  getMyReview(
+    @CurrentUser('sub') userId: number,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.reviews.getMyReviewContext(userId, id);
   }
 

@@ -1,8 +1,13 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { DirectoryLinkingService, DirectoryLinkInput } from './directory-linking.service';
+import {
+  DirectoryLinkingService,
+  DirectoryLinkInput,
+} from './directory-linking.service';
 
-function buildInput(overrides: Partial<DirectoryLinkInput> = {}): DirectoryLinkInput {
+function buildInput(
+  overrides: Partial<DirectoryLinkInput> = {},
+): DirectoryLinkInput {
   return {
     name: 'Doctolib',
     website: 'https://www.doctolib.fr',
@@ -97,7 +102,12 @@ describe('DirectoryLinkingService', () => {
     });
 
     await service.linkToDirectory(
-      buildInput({ industry: 'Health tech', location: 'Lyon', size: '201-500', logoUrl: null }),
+      buildInput({
+        industry: 'Health tech',
+        location: 'Lyon',
+        size: '201-500',
+        logoUrl: null,
+      }),
     );
 
     expect(prisma.directoryCompany.update).toHaveBeenCalledWith({
@@ -130,7 +140,9 @@ describe('DirectoryLinkingService', () => {
         clientVersion: '6.19.3',
       }),
     );
-    prisma.directoryCompany.findUniqueOrThrow.mockResolvedValue({ id: 'dc-winner' });
+    prisma.directoryCompany.findUniqueOrThrow.mockResolvedValue({
+      id: 'dc-winner',
+    });
 
     const id = await service.linkToDirectory(buildInput());
 

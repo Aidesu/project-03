@@ -5,19 +5,13 @@ import {
 } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
 import { User } from '@prisma/client';
-import { SafeUser, toSafeUser, UsersService } from '../users/users.service';
+import { SafeUser, UsersService } from '../users/users.service';
+import { ARGON2_OPTIONS } from './password.util';
 import {
   RefreshContext,
   RefreshTokenError,
   TokenService,
 } from './token.service';
-
-// @node-rs/argon2 defaults to Argon2id. OWASP-recommended cost (~19 MiB, 2 iterations).
-const ARGON2_OPTIONS = {
-  memoryCost: 19_456,
-  timeCost: 2,
-  parallelism: 1,
-};
 
 export interface AuthResult {
   user: User;
@@ -99,7 +93,7 @@ export class AuthService {
   async getProfile(userId: number): Promise<SafeUser> {
     const user = await this.users.findById(userId);
     if (!user) throw new UnauthorizedException('User no longer exists');
-    return toSafeUser(user);
+    return this.users.presentUser(user);
   }
 
   private async issueFor(user: User, ctx: RefreshContext): Promise<AuthResult> {

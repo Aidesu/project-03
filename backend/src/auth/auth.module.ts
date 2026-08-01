@@ -1,19 +1,17 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { CsrfService } from './csrf.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { TokenService } from './token.service';
+import { TokenModule } from './token.module';
 
 @Module({
-  imports: [UsersModule, JwtModule.register({})],
+  imports: [UsersModule, TokenModule],
   controllers: [AuthController],
   providers: [
     AuthService,
-    TokenService,
     CsrfService,
     // Secure-by-default: applied globally; opt out per route with @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },

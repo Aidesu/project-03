@@ -73,6 +73,11 @@ export class AuthService {
     this._user.set(null);
   }
 
+  /** Syncs the local user signal after a profile mutation, without a full `/auth/me` refetch. */
+  updateUser(user: User): void {
+    this._user.set(user);
+  }
+
   private async performRefresh(): Promise<boolean> {
     try {
       const { user } = await firstValueFrom(

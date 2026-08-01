@@ -64,12 +64,18 @@ export class CompanyReviewsService {
 
     return {
       eligible: application !== null,
-      suggestedDidRespond: application ? suggestDidRespond(application.status) : null,
+      suggestedDidRespond: application
+        ? suggestDidRespond(application.status)
+        : null,
       existingReview: existing,
     };
   }
 
-  async upsertReview(userId: number, directoryCompanyId: string, dto: SubmitReviewDto) {
+  async upsertReview(
+    userId: number,
+    directoryCompanyId: string,
+    dto: SubmitReviewDto,
+  ) {
     const eligible = await this.prisma.jobApplication.findFirst({
       where: {
         userId,
@@ -80,13 +86,18 @@ export class CompanyReviewsService {
     });
     if (!eligible) {
       throw new ForbiddenException(
-        "Ajoute une candidature réellement envoyée à cette entreprise pour pouvoir la noter.",
+        'Ajoute une candidature réellement envoyée à cette entreprise pour pouvoir la noter.',
       );
     }
 
     return this.prisma.companyReview.upsert({
       where: { userId_directoryCompanyId: { userId, directoryCompanyId } },
-      create: { userId, directoryCompanyId, rating: dto.rating, didRespond: dto.didRespond },
+      create: {
+        userId,
+        directoryCompanyId,
+        rating: dto.rating,
+        didRespond: dto.didRespond,
+      },
       update: { rating: dto.rating, didRespond: dto.didRespond },
     });
   }

@@ -42,7 +42,9 @@ describe('CompanyReviewsService', () => {
           where: expect.objectContaining({
             userId: 1,
             company: { directoryCompanyId: 'dc-1' },
-            status: { notIn: [ApplicationStatus.WISHLIST, ApplicationStatus.DRAFT] },
+            status: {
+              notIn: [ApplicationStatus.WISHLIST, ApplicationStatus.DRAFT],
+            },
           }),
         }),
       );
@@ -50,13 +52,24 @@ describe('CompanyReviewsService', () => {
 
     it('upserts (never duplicate-inserts) once the user has an eligible application', async () => {
       prisma.jobApplication.findFirst.mockResolvedValue({ id: 'app-1' });
-      prisma.companyReview.upsert.mockResolvedValue({ id: 'rev-1', rating: 4, didRespond: true });
+      prisma.companyReview.upsert.mockResolvedValue({
+        id: 'rev-1',
+        rating: 4,
+        didRespond: true,
+      });
 
       await service.upsertReview(1, 'dc-1', { rating: 4, didRespond: true });
 
       expect(prisma.companyReview.upsert).toHaveBeenCalledWith({
-        where: { userId_directoryCompanyId: { userId: 1, directoryCompanyId: 'dc-1' } },
-        create: { userId: 1, directoryCompanyId: 'dc-1', rating: 4, didRespond: true },
+        where: {
+          userId_directoryCompanyId: { userId: 1, directoryCompanyId: 'dc-1' },
+        },
+        create: {
+          userId: 1,
+          directoryCompanyId: 'dc-1',
+          rating: 4,
+          didRespond: true,
+        },
         update: { rating: 4, didRespond: true },
       });
     });
@@ -84,7 +97,11 @@ describe('CompanyReviewsService', () => {
 
       const ctx = await service.getMyReviewContext(1, 'dc-1');
 
-      expect(ctx).toEqual({ eligible: false, suggestedDidRespond: null, existingReview: null });
+      expect(ctx).toEqual({
+        eligible: false,
+        suggestedDidRespond: null,
+        existingReview: null,
+      });
     });
 
     it.each([
@@ -108,8 +125,13 @@ describe('CompanyReviewsService', () => {
     });
 
     it('surfaces the existing review when the user already rated this company', async () => {
-      prisma.jobApplication.findFirst.mockResolvedValue({ status: ApplicationStatus.INTERVIEW });
-      prisma.companyReview.findUnique.mockResolvedValue({ rating: 5, didRespond: true });
+      prisma.jobApplication.findFirst.mockResolvedValue({
+        status: ApplicationStatus.INTERVIEW,
+      });
+      prisma.companyReview.findUnique.mockResolvedValue({
+        rating: 5,
+        didRespond: true,
+      });
 
       const ctx = await service.getMyReviewContext(1, 'dc-1');
 

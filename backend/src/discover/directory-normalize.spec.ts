@@ -1,8 +1,13 @@
-import { normalizeCompanyName, normalizeWebsiteDomain } from './directory-normalize';
+import {
+  normalizeCompanyName,
+  normalizeWebsiteDomain,
+} from './directory-normalize';
 
 describe('normalizeWebsiteDomain', () => {
   it('strips protocol, www, and path', () => {
-    expect(normalizeWebsiteDomain('https://www.Doctolib.fr/careers')).toBe('doctolib.fr');
+    expect(normalizeWebsiteDomain('https://www.Doctolib.fr/careers')).toBe(
+      'doctolib.fr',
+    );
   });
 
   it('accepts a bare domain with no protocol', () => {

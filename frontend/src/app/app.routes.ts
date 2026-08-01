@@ -39,6 +39,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/progression').then((m) => m.Progression),
       },
       {
+        path: 'profile',
+        loadComponent: () => import('./pages/profile').then((m) => m.Profile),
+      },
+      {
         path: 'email-templates',
         loadComponent: () =>
           import('./pages/email-templates').then((m) => m.EmailTemplates),
