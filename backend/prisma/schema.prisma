@@ -19,6 +19,11 @@ enum Role {
   ADMIN
 }
 
+enum VerificationTokenPurpose {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
 enum ApplicationStatus {
   WISHLIST // saved, not applied yet
   DRAFT // application in preparation
@@ -155,16 +160,20 @@ model User {
   // that takes a user identifier is not enumerable by construction.
   publicId String @unique @default(uuid())
 
-  email            String   @unique
+  email            String    @unique
+  // Null until the address is proven reachable. Verification is not a login
+  // gate: it is what makes the address trustworthy as a recovery channel.
+  emailVerifiedAt  DateTime?
   name             String?
   passwordHash     String // argon2id hash — never returned to clients
   avatarStorageKey String? // opaque S3 object key; never returned to clients (presigned URL is derived from it)
-  role             Role     @default(USER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role             Role      @default(USER)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Auth
-  sessions RefreshSession[]
+  sessions           RefreshSession[]
+  verificationTokens VerificationToken[]
 
   // Profile
   settings     UserSettings?
@@ -197,6 +206,27 @@ model RefreshSession {
 
   @@index([userId])
   @@index([familyId])
+}
+
+// Single-use, short-lived tokens sent by e-mail: password recovery and address
+// verification. Only the keyed hash is stored (see VerificationTokenService),
+// so a database dump cannot be replayed into an account takeover.
+model VerificationToken {
+  id         String                   @id @default(uuid())
+  userId     Int
+  user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose    VerificationTokenPurpose
+  tokenHash  String                   @unique
+  // The address the token was sent to. A token stops being valid once the
+  // account moves to another address, so a recovery link mailed to an old
+  // (possibly compromised) inbox cannot be redeemed afterwards.
+  email      String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime                 @default(now())
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
 }
 
 model UserSettings {

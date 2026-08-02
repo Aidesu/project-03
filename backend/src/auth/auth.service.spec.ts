@@ -2,6 +2,7 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { hash } from '@node-rs/argon2';
 import { Role, User } from '@prisma/client';
 import { UsersService } from '../users/users.service';
+import { AccountRecoveryService } from './account-recovery.service';
 import { AuthService } from './auth.service';
 import {
   RefreshContext,
@@ -16,6 +17,7 @@ function buildUser(overrides: Partial<User> = {}): User {
     id: 1,
     publicId: '00000000-0000-4000-8000-000000000001',
     email: 'user@example.com',
+    emailVerifiedAt: null,
     name: null,
     passwordHash: 'placeholder',
     avatarStorageKey: null,
@@ -39,6 +41,7 @@ describe('AuthService', () => {
     rotateRefreshSession: jest.Mock;
     revokeRefreshToken: jest.Mock;
   };
+  let recovery: { sendEmailVerification: jest.Mock };
   let service: AuthService;
 
   beforeEach(() => {
@@ -59,9 +62,13 @@ describe('AuthService', () => {
       rotateRefreshSession: jest.fn(),
       revokeRefreshToken: jest.fn().mockResolvedValue(undefined),
     };
+    recovery = {
+      sendEmailVerification: jest.fn().mockResolvedValue(undefined),
+    };
     service = new AuthService(
       users as unknown as UsersService,
       tokens as unknown as TokenService,
+      recovery as unknown as AccountRecoveryService,
     );
   });
 

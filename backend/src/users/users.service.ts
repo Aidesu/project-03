@@ -8,8 +8,10 @@ import {
 import { hash, verify } from '@node-rs/argon2';
 import { Role, User, UserSettings } from '@prisma/client';
 import sharp from 'sharp';
+import { AccountRecoveryService } from '../auth/account-recovery.service';
 import { ARGON2_OPTIONS } from '../auth/password.util';
 import { RefreshContext, TokenService } from '../auth/token.service';
+import { DEFAULT_TIME_ZONE } from '../common/timezone';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -27,7 +29,7 @@ const AVATAR_PRESIGN_TTL_SECONDS = 300;
  */
 const DEFAULT_PRESENTATION: UserPresentation = {
   locale: 'fr',
-  timezone: 'Europe/Paris',
+  timezone: DEFAULT_TIME_ZONE,
 };
 
 /** The presentation preferences the client needs before it can render anything. */
@@ -47,10 +49,12 @@ export interface UserPresentation {
  */
 export type SafeUser = Omit<
   User,
-  'id' | 'publicId' | 'passwordHash' | 'avatarStorageKey'
+  'id' | 'publicId' | 'passwordHash' | 'avatarStorageKey' | 'emailVerifiedAt'
 > & {
   id: string;
   avatarUrl: string | null;
+  /** A boolean, not the timestamp: the client only ever branches on it. */
+  emailVerified: boolean;
 } & UserPresentation;
 
 /**
@@ -65,6 +69,7 @@ export function toSafeUser(
   return {
     id: user.publicId,
     email: user.email,
+    emailVerified: user.emailVerifiedAt !== null,
     name: user.name,
     role: user.role,
     createdAt: user.createdAt,
@@ -99,6 +104,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly tokens: TokenService,
+    private readonly recovery: AccountRecoveryService,
   ) {}
 
   findById(id: number): Promise<User | null> {
@@ -156,7 +162,11 @@ export class UsersService {
   }> {
     const user = await this.requireUser(userId);
 
-    const data: { name?: string | null; email?: string } = {};
+    const data: {
+      name?: string | null;
+      email?: string;
+      emailVerifiedAt?: Date | null;
+    } = {};
 
     if (dto.name !== undefined) {
       data.name = dto.name.length > 0 ? dto.name : null;
@@ -172,6 +182,10 @@ export class UsersService {
         throw new ConflictException('Email already registered');
       }
       data.email = dto.email;
+      // The new address has proven nothing yet. Verification restarts from
+      // zero, otherwise moving an account to an attacker-controlled inbox
+      // would inherit the trust earned by the old one.
+      data.emailVerifiedAt = null;
     }
 
     const updated = await this.prisma.user.update({
@@ -182,6 +196,8 @@ export class UsersService {
     if (!emailChanged) {
       return { user: await this.presentUser(updated), tokens: null };
     }
+
+    await this.recovery.sendEmailVerification(updated);
 
     await this.tokens.revokeAllSessionsForUser(userId);
     const accessToken = await this.tokens.issueAccessToken({

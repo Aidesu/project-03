@@ -5,6 +5,7 @@ const user: User = {
   id: 42,
   publicId: '11111111-2222-4333-8444-555555555555',
   email: 'a@b.c',
+  emailVerifiedAt: new Date('2026-01-01T12:00:00Z'),
   name: 'Ada',
   passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$abc$def',
   avatarStorageKey: 'avatars/42/secret.webp',
@@ -48,6 +49,7 @@ describe('toSafeUser', () => {
       'avatarUrl',
       'createdAt',
       'email',
+      'emailVerified',
       'id',
       'locale',
       'name',
@@ -57,8 +59,21 @@ describe('toSafeUser', () => {
     ]);
   });
 
+  // The client branches on a boolean; the timestamp is an internal detail and
+  // has no business being exposed.
+  it('reduces the verification timestamp to a boolean', () => {
+    expect(toSafeUser(user).emailVerified).toBe(true);
+    expect(toSafeUser({ ...user, emailVerifiedAt: null }).emailVerified).toBe(
+      false,
+    );
+    expect(JSON.stringify(toSafeUser(user))).not.toContain('emailVerifiedAt');
+  });
+
   it('carries the display preferences so the UI can pick a language at once', () => {
-    const safe = toSafeUser(user, null, { locale: 'de', timezone: 'Europe/Berlin' });
+    const safe = toSafeUser(user, null, {
+      locale: 'de',
+      timezone: 'Europe/Berlin',
+    });
     expect(safe.locale).toBe('de');
     expect(safe.timezone).toBe('Europe/Berlin');
   });

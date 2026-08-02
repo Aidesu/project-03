@@ -11,12 +11,30 @@ import { CorrelatedRequest } from './correlation-id.middleware';
 
 /** Lowest status we treat as "our bug": logged in full, generic on the wire. */
 const SERVER_ERROR_FLOOR = 500;
+const CLIENT_ERROR_FLOOR = 400;
 
 interface ErrorBody {
   statusCode: number;
   error: string;
   message: string | string[];
   correlationId?: string;
+}
+
+/**
+ * Express-layer middleware (csrf-csrf, body parsers, multer) reports client
+ * errors as a plain object carrying a numeric `statusCode`, not as a Nest
+ * HttpException. Treating those as 500s buries a rejected CSRF token — an
+ * ordinary 403 — in the noise of genuine server faults, and leaves the client
+ * unable to tell a bug from a request it can fix.
+ */
+function clientErrorStatus(exception: unknown): number | null {
+  if (typeof exception !== 'object' || exception === null) return null;
+  const status = (exception as { statusCode?: unknown }).statusCode;
+  return typeof status === 'number' &&
+    status >= CLIENT_ERROR_FLOOR &&
+    status < SERVER_ERROR_FLOOR
+    ? status
+    : null;
 }
 
 /**
@@ -58,6 +76,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
 
       res.status(status).json(body);
+      return;
+    }
+
+    const rejected = clientErrorStatus(exception);
+    if (rejected !== null) {
+      // Worth a line — a CSRF rejection is a security signal — but not the
+      // stack trace of a server fault, and still generic on the wire.
+      this.logger.warn(
+        `[${correlationId ?? 'no-correlation-id'}] ${req.method} ${req.path} rejected with ${rejected}`,
+      );
+      res.status(rejected).json({
+        statusCode: rejected,
+        error: 'Request rejected',
+        message: 'Request rejected.',
+        correlationId,
+      });
       return;
     }
 

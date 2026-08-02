@@ -5,10 +5,11 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { CsrfService } from './csrf.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RecoveryModule } from './recovery.module';
 import { TokenModule } from './token.module';
 
 @Module({
-  imports: [UsersModule, TokenModule],
+  imports: [UsersModule, TokenModule, RecoveryModule],
   controllers: [AuthController],
   providers: [
     AuthService,

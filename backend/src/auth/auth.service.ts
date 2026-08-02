@@ -6,6 +6,7 @@ import {
 import { hash, verify } from '@node-rs/argon2';
 import { User } from '@prisma/client';
 import { SafeUser, UsersService } from '../users/users.service';
+import { AccountRecoveryService } from './account-recovery.service';
 import { ARGON2_OPTIONS } from './password.util';
 import {
   RefreshContext,
@@ -27,10 +28,11 @@ export class AuthService {
   constructor(
     private readonly users: UsersService,
     private readonly tokens: TokenService,
+    private readonly recovery: AccountRecoveryService,
   ) {}
 
   async register(
-    input: { email: string; password: string; name?: string },
+    input: { email: string; password: string; name?: string; locale?: string },
     ctx: RefreshContext,
   ): Promise<AuthResult> {
     const existing = await this.users.findByEmail(input.email);
@@ -42,6 +44,9 @@ export class AuthService {
       passwordHash,
       name: input.name ?? null,
     });
+    // Not awaited for its result, and never a reason to fail the signup: the
+    // account works unverified, the link can always be re-sent.
+    await this.recovery.sendEmailVerification(user, input.locale);
     return this.issueFor(user, ctx);
   }
 

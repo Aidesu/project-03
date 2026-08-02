@@ -14,6 +14,7 @@ const SECRET_KEYS = [
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
   'CSRF_SECRET',
+  'EMAIL_TOKEN_SECRET',
 ] as const;
 
 export function validateEnv(
@@ -83,6 +84,24 @@ export function validateEnv(
     }
     if (origins.some((o) => o.startsWith('http://'))) {
       errors.push('CORS_ORIGIN must use https:// in production.');
+    }
+
+    // The base of every link mailed out. Wrong, and password-reset links point
+    // somewhere the user cannot reach — or somewhere an attacker controls.
+    const appUrl = typeof config.APP_URL === 'string' ? config.APP_URL : '';
+    if (!appUrl) {
+      errors.push('APP_URL is required in production.');
+    } else if (!appUrl.startsWith('https://')) {
+      errors.push('APP_URL must use https:// in production.');
+    }
+
+    // Without a relay, account recovery and address verification fail silently
+    // — the one class of outage a user cannot work around.
+    if (!config.SMTP_HOST) {
+      errors.push('SMTP_HOST is required in production.');
+    }
+    if (!config.MAIL_FROM) {
+      errors.push('MAIL_FROM is required in production.');
     }
   }
 

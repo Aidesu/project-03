@@ -92,6 +92,49 @@ export const fr: Record<TranslationKey, string> = {
   'register.emailTaken': 'Un compte existe déjà avec cet email.',
   'register.error': 'Inscription impossible. Vérifie tes informations et réessaie.',
 
+  // ---- Mot de passe oublié & vérification d’e-mail ---------------------
+  'login.forgotPassword': 'Mot de passe oublié ?',
+  'forgotPassword.title': 'Mot de passe oublié ?',
+  'forgotPassword.subtitle':
+    'Indique ton adresse et on t’envoie un lien pour en choisir un nouveau.',
+  'forgotPassword.submit': 'Envoyer le lien',
+  'forgotPassword.submitting': 'Envoi…',
+  'forgotPassword.sent':
+    'Si un compte existe pour cette adresse, un lien est en route. Il expire dans {minutes, plural, one {# minute} other {# minutes}}.',
+  'forgotPassword.backToLogin': 'Retour à la connexion',
+  'forgotPassword.error': 'Quelque chose a échoué. Réessaie dans un instant.',
+  'forgotPassword.tooMany':
+    'Trop de tentatives. Patiente un moment avant de réessayer.',
+  'resetPassword.title': 'Choisis un nouveau mot de passe',
+  'resetPassword.subtitle': 'Ce lien ne sert qu’une fois, et pas très longtemps.',
+  'resetPassword.password': 'Nouveau mot de passe',
+  'resetPassword.confirm': 'Confirme le mot de passe',
+  'resetPassword.mismatch': 'Les deux mots de passe ne correspondent pas.',
+  'resetPassword.submit': 'Mettre à jour mon mot de passe',
+  'resetPassword.submitting': 'Mise à jour…',
+  'resetPassword.done':
+    'Ton mot de passe est à jour, et toutes tes autres sessions ont été déconnectées.',
+  'resetPassword.signIn': 'Se connecter',
+  'resetPassword.invalidLink': 'Ce lien est invalide ou a expiré.',
+  'resetPassword.missingToken': 'Ce lien est incomplet.',
+  'resetPassword.requestNew': 'Demander un nouveau lien',
+  'resetPassword.error':
+    'Le mot de passe n’a pas pu être mis à jour. Réessaie dans un instant.',
+  'verifyEmail.title': 'Confirmation de l’adresse',
+  'verifyEmail.checking': 'Confirmation de ton adresse…',
+  'verifyEmail.done':
+    'Ton adresse est confirmée. Tu peux maintenant récupérer ton compte par e-mail.',
+  'verifyEmail.invalid':
+    'Ce lien est invalide ou a expiré. Tu peux en demander un nouveau depuis ton profil.',
+  'verifyEmail.continue': 'Continuer',
+  'emailBanner.text':
+    'Confirme ton adresse e-mail pour pouvoir récupérer ton compte si tu oublies ton mot de passe.',
+  'emailBanner.resend': 'Renvoyer l’e-mail',
+  'emailBanner.sending': 'Envoi…',
+  'emailBanner.sent': 'E-mail envoyé — regarde ta boîte de réception.',
+  'emailBanner.error': 'L’e-mail n’a pas pu être envoyé. Réessaie dans un instant.',
+  'emailBanner.dismiss': 'Masquer',
+
   // ---- Dashboard -------------------------------------------------------
   'dashboard.greeting': 'Salut {name} 👋',
   'dashboard.loadError': 'Impossible de charger ta progression pour l’instant.',

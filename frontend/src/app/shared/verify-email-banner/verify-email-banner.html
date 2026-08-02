@@ -1,0 +1,29 @@
+@if (visible()) {
+  <div
+    class="alert alert--block mb-6 flex flex-wrap items-center justify-between gap-3"
+    role="status"
+  >
+    <span>{{ t(message()) }}</span>
+
+    <span class="flex items-center gap-2">
+      @if (state() !== 'sent') {
+        <button
+          type="button"
+          (click)="resend()"
+          [disabled]="state() === 'sending'"
+          class="btn btn--sm btn--ghost"
+        >
+          {{ state() === 'sending' ? t('emailBanner.sending') : t('emailBanner.resend') }}
+        </button>
+      }
+      <button
+        type="button"
+        (click)="dismiss()"
+        [attr.aria-label]="t('emailBanner.dismiss')"
+        class="btn btn--icon btn--ghost h-8 w-8"
+      >
+        ✕
+      </button>
+    </span>
+  </div>
+}

@@ -14,6 +14,23 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/register').then((m) => m.Register),
   },
   {
+    path: 'forgot-password',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./pages/forgot-password').then((m) => m.ForgotPassword),
+  },
+  // No guard on these two: they are reached from an e-mail link, which may be
+  // opened in a browser that is signed in, signed out, or on another device.
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./pages/reset-password').then((m) => m.ResetPassword),
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () => import('./pages/verify-email').then((m) => m.VerifyEmail),
+  },
+  {
     path: '',
     component: Shell,
     canActivate: [authGuard],

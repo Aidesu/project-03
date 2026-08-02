@@ -93,6 +93,48 @@ export const en = {
   'register.emailTaken': 'An account already exists with this email.',
   'register.error': 'Sign-up failed. Check your details and try again.',
 
+  // ---- Password recovery & e-mail verification -------------------------
+  'login.forgotPassword': 'Forgot your password?',
+  'forgotPassword.title': 'Forgot your password?',
+  'forgotPassword.subtitle':
+    'Enter your address and we will send you a link to choose a new one.',
+  'forgotPassword.submit': 'Send the link',
+  'forgotPassword.submitting': 'Sending…',
+  'forgotPassword.sent':
+    'If an account exists for this address, a link is on its way. It expires in {minutes, plural, one {# minute} other {# minutes}}.',
+  'forgotPassword.backToLogin': 'Back to sign-in',
+  'forgotPassword.error': 'Something went wrong. Try again in a moment.',
+  'forgotPassword.tooMany': 'Too many attempts. Wait a moment before trying again.',
+  'resetPassword.title': 'Choose a new password',
+  'resetPassword.subtitle': 'This link works once, and not for long.',
+  'resetPassword.password': 'New password',
+  'resetPassword.confirm': 'Confirm the password',
+  'resetPassword.mismatch': 'The two passwords do not match.',
+  'resetPassword.submit': 'Update my password',
+  'resetPassword.submitting': 'Updating…',
+  'resetPassword.done':
+    'Your password has been updated, and every other session was signed out.',
+  'resetPassword.signIn': 'Sign in',
+  'resetPassword.invalidLink': 'This link is invalid or has expired.',
+  'resetPassword.missingToken': 'This link is incomplete.',
+  'resetPassword.requestNew': 'Request a new link',
+  'resetPassword.error':
+    'Your password could not be updated. Try again in a moment.',
+  'verifyEmail.title': 'E-mail confirmation',
+  'verifyEmail.checking': 'Confirming your address…',
+  'verifyEmail.done':
+    'Your address is confirmed. You can now recover your account by e-mail.',
+  'verifyEmail.invalid':
+    'This link is invalid or has expired. You can ask for a new one from your profile.',
+  'verifyEmail.continue': 'Continue',
+  'emailBanner.text':
+    'Confirm your e-mail address so you can recover your account if you forget your password.',
+  'emailBanner.resend': 'Resend the e-mail',
+  'emailBanner.sending': 'Sending…',
+  'emailBanner.sent': 'E-mail sent — check your inbox.',
+  'emailBanner.error': 'The e-mail could not be sent. Try again in a moment.',
+  'emailBanner.dismiss': 'Dismiss',
+
   // ---- Dashboard -------------------------------------------------------
   'dashboard.greeting': 'Hi {name} 👋',
   'dashboard.loadError': 'Your progress cannot be loaded right now.',

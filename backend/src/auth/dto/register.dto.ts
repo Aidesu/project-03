@@ -1,11 +1,13 @@
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { SUPPORTED_LOCALES } from '../../users/dto/update-settings.dto';
 
 const normalizeEmail = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
@@ -29,4 +31,13 @@ export class RegisterDto {
   @IsString()
   @MaxLength(100)
   name?: string;
+
+  /**
+   * The language the signup form was displayed in. Used only to pick the
+   * language of the verification e-mail — there is no settings row yet at this
+   * point, and a German signup should not be answered in French.
+   */
+  @IsOptional()
+  @IsIn(SUPPORTED_LOCALES)
+  locale?: string;
 }

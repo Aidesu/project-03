@@ -65,6 +65,10 @@ export class InterviewsService {
         XP_INTERVIEW_COMPLETED,
         dto.applicationId,
       );
+    } else {
+      // A scheduled interview earns no XP yet, but the interview count is
+      // itself an achievement metric — so it still has to be re-evaluated.
+      await this.gamification.syncAchievements(userId);
     }
 
     return interview;

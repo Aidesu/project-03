@@ -6,6 +6,8 @@ export interface User {
   /** Opaque server-side identifier (uuid) — never a sequential number. */
   id: string;
   email: string;
+  /** False until the address has been confirmed by clicking the mailed link. */
+  emailVerified: boolean;
   name: string | null;
   avatarUrl: string | null;
   role: Role;

@@ -4,6 +4,14 @@ import {
   GamificationProfile,
   XpReason,
 } from '@prisma/client';
+import {
+  CalendarDay,
+  calendarDayFromStored,
+  calendarDayIn,
+  calendarDayToUtcMidnight,
+  calendarDaysBetween,
+} from '../common/timezone';
+import { UserTimezoneService } from '../common/user-timezone.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 // Simple, transparent progression: every 100 XP is one level.
@@ -35,23 +43,26 @@ const ACHIEVEMENT_METRIC: Record<string, AchievementMetric> = {
   LEVEL_10: 'level',
 };
 
-/** UTC midnight of the given date, used for day-granular streak comparisons. */
-function startOfUtcDay(date: Date): Date {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
+/** An unmapped code falls back to the most common metric rather than crashing. */
+const metricFor = (code: string): AchievementMetric =>
+  ACHIEVEMENT_METRIC[code] ?? 'applications';
 
+/**
+ * Streak arithmetic on calendar days, where `today` is the user's local date —
+ * a day boundary is where their clock says it is, not where UTC says it is.
+ * `lastActiveOn` stores that date pinned to UTC midnight (see
+ * {@link calendarDayToUtcMidnight}), so comparisons stay exact and DST-proof.
+ */
 function nextStreak(
   existing: GamificationProfile | null,
-  today: Date,
+  today: CalendarDay,
 ): { current: number; longest: number } {
   const prevLongest = existing?.longestStreakDays ?? 0;
   if (!existing?.lastActiveOn) {
     return { current: 1, longest: Math.max(prevLongest, 1) };
   }
-  const last = startOfUtcDay(existing.lastActiveOn);
-  const diffDays = Math.round((today.getTime() - last.getTime()) / 86_400_000);
+  const last = calendarDayFromStored(existing.lastActiveOn);
+  const diffDays = calendarDaysBetween(last, today);
   let current: number;
   if (diffDays <= 0)
     current = Math.max(existing.currentStreakDays, 1); // same day
@@ -62,11 +73,14 @@ function nextStreak(
 
 @Injectable()
 export class GamificationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly timezones: UserTimezoneService,
+  ) {}
 
   /**
-   * Award XP: append to the Xp ledger and update the profile (xp/level/streak),
-   * creating the profile lazily on first activity.
+   * Award XP, then re-evaluate the achievement catalog — every XP-earning
+   * action is also the moment an achievement can newly unlock.
    */
   async award(
     userId: number,
@@ -74,37 +88,74 @@ export class GamificationService {
     amount: number,
     applicationId?: string,
   ): Promise<void> {
-    const today = startOfUtcDay(new Date());
-    const existing = await this.prisma.gamificationProfile.findUnique({
-      where: { userId },
-    });
-    const newXp = (existing?.xp ?? 0) + amount;
-    const newLevel = levelForXp(newXp);
-    const { current, longest } = nextStreak(existing, today);
+    await this.grantXp(userId, reason, amount, applicationId);
+    await this.syncAchievements(userId);
+  }
 
-    await this.prisma.$transaction([
-      this.prisma.xpEvent.create({
+  /**
+   * Append to the XP ledger and move the profile forward, creating it lazily on
+   * first activity. Returns the resulting XP total.
+   *
+   * The total is incremented by the database, never written as a value this
+   * process computed: two awards racing (a status change and an achievement
+   * unlock, or two tabs) would otherwise both write `read + amount` and one of
+   * them would silently vanish.
+   *
+   * The streak fields are still read-modify-write, and deliberately so: two
+   * awards on the same local day derive the same numbers from the same
+   * `lastActiveOn`, so the concurrent case converges instead of losing data.
+   */
+  private async grantXp(
+    userId: number,
+    reason: XpReason,
+    amount: number,
+    applicationId?: string,
+  ): Promise<number> {
+    const timeZone = await this.timezones.forUser(userId);
+    const today = calendarDayIn(new Date(), timeZone);
+    const lastActiveOn = calendarDayToUtcMidnight(today);
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.gamificationProfile.findUnique({
+        where: { userId },
+      });
+      const { current, longest } = nextStreak(existing, today);
+
+      await tx.xpEvent.create({
         data: { userId, reason, amount, applicationId: applicationId ?? null },
-      }),
-      this.prisma.gamificationProfile.upsert({
+      });
+
+      const profile = await tx.gamificationProfile.upsert({
         where: { userId },
         create: {
           userId,
-          xp: newXp,
-          level: newLevel,
+          xp: amount,
+          level: levelForXp(amount),
           currentStreakDays: 1,
           longestStreakDays: 1,
-          lastActiveOn: today,
+          lastActiveOn,
         },
         update: {
-          xp: newXp,
-          level: newLevel,
+          xp: { increment: amount },
           currentStreakDays: current,
           longestStreakDays: longest,
-          lastActiveOn: today,
+          lastActiveOn,
         },
-      }),
-    ]);
+      });
+
+      // `level` is a denormalized cache of levelForXp(xp) — kept current here
+      // so the table stays readable on its own, but never trusted on a read
+      // path (see getProfile), which derives it from the XP total instead.
+      const level = levelForXp(profile.xp);
+      if (profile.level !== level) {
+        await tx.gamificationProfile.update({
+          where: { userId },
+          data: { level },
+        });
+      }
+
+      return profile.xp;
+    });
   }
 
   /** The user's progression summary (+ recent XP), with sane defaults if none yet. */
@@ -121,7 +172,9 @@ export class GamificationService {
     const xp = profile?.xp ?? 0;
     return {
       xp,
-      level: profile?.level ?? 1,
+      // Derived, not read from the column: the XP total is the single source
+      // of truth, so a stale cached level can never surface to the client.
+      level: levelForXp(xp),
       currentStreakDays: profile?.currentStreakDays ?? 0,
       longestStreakDays: profile?.longestStreakDays ?? 0,
       lastActiveOn: profile?.lastActiveOn ?? null,
@@ -131,7 +184,7 @@ export class GamificationService {
     };
   }
 
-  /** Live values behind each achievement metric — no persistence, just a read. */
+  /** Live values behind each achievement metric — a read, never a write. */
   private async computeMetrics(
     userId: number,
     profile: GamificationProfile | null,
@@ -158,67 +211,86 @@ export class GamificationService {
       offers,
       accepted,
       streak: profile?.longestStreakDays ?? 0,
-      level: profile?.level ?? 1,
+      level: levelForXp(profile?.xp ?? 0),
     };
   }
 
-  /**
-   * Catalog + this user's progress on every achievement, unlocking (and
-   * awarding XP for) any that newly cross their threshold.
-   */
-  async listAchievements(userId: number) {
+  /** The catalog, the user's unlocks and their live metrics — shared by both paths. */
+  private async evaluate(userId: number) {
     const [profile, catalog, userRows] = await Promise.all([
       this.prisma.gamificationProfile.findUnique({ where: { userId } }),
       this.prisma.achievement.findMany({ orderBy: { createdAt: 'asc' } }),
       this.prisma.userAchievement.findMany({ where: { userId } }),
     ]);
 
-    const metrics = await this.computeMetrics(userId, profile);
-    const byAchievementId = new Map(userRows.map((r) => [r.achievementId, r]));
+    return {
+      catalog,
+      metrics: await this.computeMetrics(userId, profile),
+      unlockedById: new Map(userRows.map((row) => [row.achievementId, row])),
+    };
+  }
 
-    const results: {
-      id: string;
-      code: string;
-      name: string;
-      description: string;
-      icon: string | null;
-      xpReward: number;
-      threshold: number;
-      progress: number;
-      unlockedAt: Date | null;
-    }[] = [];
+  /**
+   * Unlock every achievement whose metric has newly crossed its threshold, and
+   * grant the XP that comes with it.
+   *
+   * A write path, called from the mutations that can move a metric — never
+   * from a GET. Unlocking on a read made an achievement wait for someone to
+   * open the Progression page, and made a request with no CSRF protection
+   * grant XP as a side effect.
+   */
+  async syncAchievements(userId: number): Promise<void> {
+    const { catalog, metrics, unlockedById } = await this.evaluate(userId);
 
     for (const achievement of catalog) {
-      const metricKey = ACHIEVEMENT_METRIC[achievement.code] ?? 'applications';
-      const value = metrics[metricKey];
+      if (unlockedById.get(achievement.id)?.unlockedAt) continue;
+
+      const value = metrics[metricFor(achievement.code)];
       const threshold = achievement.threshold ?? 1;
-      const existing = byAchievementId.get(achievement.id);
-      let unlockedAt = existing?.unlockedAt ?? null;
+      if (value < threshold) continue;
 
-      if (!unlockedAt && value >= threshold) {
-        const unlocked = await this.prisma.userAchievement.upsert({
-          where: {
-            userId_achievementId: { userId, achievementId: achievement.id },
-          },
-          create: {
-            userId,
-            achievementId: achievement.id,
-            progress: value,
-            unlockedAt: new Date(),
-          },
-          update: { progress: value, unlockedAt: new Date() },
-        });
-        unlockedAt = unlocked.unlockedAt;
-        if (achievement.xpReward > 0) {
-          await this.award(
-            userId,
-            XpReason.ACHIEVEMENT_UNLOCKED,
-            achievement.xpReward,
-          );
-        }
+      // Two syncs can reach the same achievement at once (a status change and
+      // an interview saved together, say). The unique (userId, achievementId)
+      // constraint is what makes the unlock happen exactly once, and the
+      // insert count is what tells us whether *we* are the pass that did it —
+      // a check-then-act here would hand out the reward twice.
+      const { count } = await this.prisma.userAchievement.createMany({
+        data: {
+          userId,
+          achievementId: achievement.id,
+          progress: value,
+          unlockedAt: new Date(),
+        },
+        skipDuplicates: true,
+      });
+      if (count === 0) continue;
+
+      if (achievement.xpReward > 0) {
+        const xp = await this.grantXp(
+          userId,
+          XpReason.ACHIEVEMENT_UNLOCKED,
+          achievement.xpReward,
+        );
+        // The reward can push the user into a new level, and the level is
+        // itself a metric — refresh it so a level achievement further down the
+        // catalog unlocks in this same pass rather than on the next action.
+        metrics.level = levelForXp(xp);
       }
+    }
+  }
 
-      results.push({
+  /**
+   * The catalog with this user's progress on each entry. Pure read: unlocking
+   * is {@link syncAchievements}' job.
+   */
+  async listAchievements(userId: number) {
+    const { catalog, metrics, unlockedById } = await this.evaluate(userId);
+
+    return catalog.map((achievement) => {
+      const threshold = achievement.threshold ?? 1;
+      const value = metrics[metricFor(achievement.code)];
+
+      return {
         id: achievement.id,
         code: achievement.code,
         name: achievement.name,
@@ -227,10 +299,8 @@ export class GamificationService {
         xpReward: achievement.xpReward,
         threshold,
         progress: Math.min(value, threshold),
-        unlockedAt,
-      });
-    }
-
-    return results;
+        unlockedAt: unlockedById.get(achievement.id)?.unlockedAt ?? null,
+      };
+    });
   }
 }

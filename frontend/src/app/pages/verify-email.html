@@ -1,0 +1,33 @@
+<div class="flex min-h-screen items-center justify-center px-6 py-12">
+  <div class="w-full max-w-sm text-center">
+    <div class="mb-8 flex justify-end">
+      <app-language-switcher placement="bottom-end" />
+    </div>
+
+    <h2 class="text-2xl font-bold tracking-tight text-slate-900">
+      {{ t('verifyEmail.title') }}
+    </h2>
+
+    @switch (state()) {
+      @case ('checking') {
+        <p class="mt-6 text-sm text-slate-500">{{ t('verifyEmail.checking') }}</p>
+      }
+      @case ('done') {
+        <div class="mt-6 alert alert--success">{{ t('verifyEmail.done') }}</div>
+        <a
+          [routerLink]="isAuthenticated() ? '/' : '/login'"
+          class="mt-6 btn btn--primary w-full"
+          >{{ t('verifyEmail.continue') }}</a
+        >
+      }
+      @case ('invalid') {
+        <div class="mt-6 alert alert--error">{{ t('verifyEmail.invalid') }}</div>
+        <a
+          [routerLink]="isAuthenticated() ? '/profile' : '/login'"
+          class="mt-6 btn btn--primary w-full"
+          >{{ t('verifyEmail.continue') }}</a
+        >
+      }
+    }
+  </div>
+</div>

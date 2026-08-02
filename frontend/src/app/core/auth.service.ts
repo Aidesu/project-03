@@ -15,6 +15,9 @@ export interface RegisterInput {
   name?: string;
 }
 
+/** Kept in step with PASSWORD_RESET_TTL_MINUTES on the server. */
+export const PASSWORD_RESET_TTL_MINUTES = 30;
+
 /**
  * Auth state + flows against the cookie-based backend.
  *
@@ -116,10 +119,45 @@ export class AuthService {
 
   async register(input: RegisterInput): Promise<User> {
     const { user } = await firstValueFrom(
-      this.http.post<AuthResponse>(`${this.base}/register`, input),
+      // The active language travels with the signup: there is no settings row
+      // yet, so it is the only clue the verification e-mail has.
+      this.http.post<AuthResponse>(`${this.base}/register`, {
+        ...input,
+        locale: this.i18n.locale(),
+      }),
     );
     this.adoptUser(user);
     return user;
+  }
+
+  /**
+   * Ask for a reset link. Resolves the same way whether or not the address has
+   * an account — the server answers 204 either way, on purpose.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(`${this.base}/password/forgot`, { email }),
+    );
+  }
+
+  /** Redeem a reset link. Every session, including this browser's, is now gone. */
+  async resetPassword(token: string, password: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(`${this.base}/password/reset`, { token, password }),
+    );
+    this._user.set(null);
+  }
+
+  /** Redeem a verification link. Refreshes the local user when one is signed in. */
+  async verifyEmail(token: string): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.base}/email/verify`, { token }));
+    if (this._user()) await this.restoreSession();
+  }
+
+  async resendEmailVerification(): Promise<void> {
+    await firstValueFrom(
+      this.http.post(`${this.base}/email/verify/resend`, {}),
+    );
   }
 
   async logout(): Promise<void> {

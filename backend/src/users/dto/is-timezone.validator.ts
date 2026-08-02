@@ -5,13 +5,12 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
-
-const IANA_TIMEZONES = new Set(Intl.supportedValuesOf('timeZone'));
+import { isSupportedTimeZone } from '../../common/timezone';
 
 @ValidatorConstraint({ name: 'isIanaTimezone', async: false })
 export class IsIanaTimezoneConstraint implements ValidatorConstraintInterface {
   validate(value: unknown): boolean {
-    return typeof value === 'string' && IANA_TIMEZONES.has(value);
+    return isSupportedTimeZone(value);
   }
 
   defaultMessage(args: ValidationArguments): string {

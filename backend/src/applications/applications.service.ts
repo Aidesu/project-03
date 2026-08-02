@@ -9,6 +9,12 @@ import {
   Prisma,
   XpReason,
 } from '@prisma/client';
+import {
+  addCalendarDays,
+  calendarDayIn,
+  earliestInstantOfCalendarDay,
+} from '../common/timezone';
+import { UserTimezoneService } from '../common/user-timezone.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
 import { GamificationService } from '../gamification/gamification.service';
@@ -17,13 +23,6 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { DailyStatsQueryDto } from './dto/daily-stats-query.dto';
 import { QueryApplicationsDto } from './dto/query-applications.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
-
-/** Midnight UTC of the given date. */
-function startOfUtcDay(date: Date): Date {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
 
 const APPLICATION_DETAIL_INCLUDE = {
   company: true,
@@ -82,6 +81,7 @@ export class ApplicationsService {
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
     private readonly companies: CompaniesService,
+    private readonly timezones: UserTimezoneService,
   ) {}
 
   async create(userId: number, dto: CreateApplicationDto) {
@@ -309,29 +309,42 @@ export class ApplicationsService {
     await this.prisma.jobApplication.delete({ where: { id } });
   }
 
-  /** Applications created per week, oldest first — the dashboard trend chart. */
+  /**
+   * Applications created per day, oldest first — the dashboard trend chart and
+   * heatmap. Days are the user's own calendar days: someone applying at 00:30
+   * in Europe/Paris must see it on today's bar, not yesterday's.
+   *
+   * The range query is deliberately over-inclusive at its lower bound (see
+   * {@link earliestInstantOfCalendarDay}); rows outside the requested window
+   * are dropped by the bucket lookup below.
+   */
   async dailyStats(
     userId: number,
     query: DailyStatsQueryDto,
   ): Promise<{ date: string; count: number }[]> {
     const { days } = query;
-    const rangeStart = startOfUtcDay(new Date());
-    rangeStart.setUTCDate(rangeStart.getUTCDate() - (days - 1));
+    const timeZone = await this.timezones.forUser(userId);
+    const firstDay = addCalendarDays(
+      calendarDayIn(new Date(), timeZone),
+      -(days - 1),
+    );
 
     const applications = await this.prisma.jobApplication.findMany({
-      where: { userId, createdAt: { gte: rangeStart } },
+      where: {
+        userId,
+        createdAt: { gte: earliestInstantOfCalendarDay(firstDay, timeZone) },
+      },
       select: { createdAt: true },
     });
 
     const buckets = new Map<string, number>();
     for (let i = 0; i < days; i++) {
-      const day = new Date(rangeStart);
-      day.setUTCDate(day.getUTCDate() + i);
-      buckets.set(day.toISOString().slice(0, 10), 0);
+      buckets.set(addCalendarDays(firstDay, i), 0);
     }
     for (const { createdAt } of applications) {
-      const key = startOfUtcDay(createdAt).toISOString().slice(0, 10);
-      if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+      const key = calendarDayIn(createdAt, timeZone);
+      const count = buckets.get(key);
+      if (count !== undefined) buckets.set(key, count + 1);
     }
 
     return Array.from(buckets, ([date, count]) => ({ date, count }));

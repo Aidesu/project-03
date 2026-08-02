@@ -94,6 +94,51 @@ export const de: Record<TranslationKey, string> = {
   'register.error':
     'Registrierung fehlgeschlagen. Prüfe deine Angaben und versuch es erneut.',
 
+  // ---- Passwort vergessen & E-Mail-Bestätigung -------------------------
+  'login.forgotPassword': 'Passwort vergessen?',
+  'forgotPassword.title': 'Passwort vergessen?',
+  'forgotPassword.subtitle':
+    'Gib deine Adresse an und wir schicken dir einen Link für ein neues Passwort.',
+  'forgotPassword.submit': 'Link senden',
+  'forgotPassword.submitting': 'Wird gesendet…',
+  'forgotPassword.sent':
+    'Falls für diese Adresse ein Konto existiert, ist ein Link unterwegs. Er läuft in {minutes, plural, one {# Minute} other {# Minuten}} ab.',
+  'forgotPassword.backToLogin': 'Zurück zur Anmeldung',
+  'forgotPassword.error':
+    'Da ist etwas schiefgelaufen. Versuch es gleich noch einmal.',
+  'forgotPassword.tooMany':
+    'Zu viele Versuche. Warte einen Moment, bevor du es erneut versuchst.',
+  'resetPassword.title': 'Neues Passwort wählen',
+  'resetPassword.subtitle': 'Dieser Link gilt einmal — und nicht lange.',
+  'resetPassword.password': 'Neues Passwort',
+  'resetPassword.confirm': 'Passwort bestätigen',
+  'resetPassword.mismatch': 'Die beiden Passwörter stimmen nicht überein.',
+  'resetPassword.submit': 'Passwort aktualisieren',
+  'resetPassword.submitting': 'Wird aktualisiert…',
+  'resetPassword.done':
+    'Dein Passwort ist aktualisiert, und alle anderen Sitzungen wurden abgemeldet.',
+  'resetPassword.signIn': 'Anmelden',
+  'resetPassword.invalidLink': 'Dieser Link ist ungültig oder abgelaufen.',
+  'resetPassword.missingToken': 'Dieser Link ist unvollständig.',
+  'resetPassword.requestNew': 'Neuen Link anfordern',
+  'resetPassword.error':
+    'Das Passwort konnte nicht aktualisiert werden. Versuch es gleich noch einmal.',
+  'verifyEmail.title': 'E-Mail-Bestätigung',
+  'verifyEmail.checking': 'Deine Adresse wird bestätigt…',
+  'verifyEmail.done':
+    'Deine Adresse ist bestätigt. Du kannst dein Konto jetzt per E-Mail wiederherstellen.',
+  'verifyEmail.invalid':
+    'Dieser Link ist ungültig oder abgelaufen. Einen neuen kannst du in deinem Profil anfordern.',
+  'verifyEmail.continue': 'Weiter',
+  'emailBanner.text':
+    'Bestätige deine E-Mail-Adresse, damit du dein Konto wiederherstellen kannst, falls du dein Passwort vergisst.',
+  'emailBanner.resend': 'E-Mail erneut senden',
+  'emailBanner.sending': 'Wird gesendet…',
+  'emailBanner.sent': 'E-Mail gesendet — sieh in deinem Posteingang nach.',
+  'emailBanner.error':
+    'Die E-Mail konnte nicht gesendet werden. Versuch es gleich noch einmal.',
+  'emailBanner.dismiss': 'Ausblenden',
+
   // ---- Dashboard -------------------------------------------------------
   'dashboard.greeting': 'Hallo {name} 👋',
   'dashboard.loadError': 'Dein Fortschritt kann gerade nicht geladen werden.',

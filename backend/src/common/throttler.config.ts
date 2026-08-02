@@ -11,6 +11,9 @@ import type { Request } from 'express';
 const ACCOUNT_THROTTLED_PATHS = new Set([
   '/api/auth/login',
   '/api/auth/register',
+  // Recovery is the same shape of attack: mailing a victim a reset link over
+  // and over is both a nuisance and a way to probe for an account.
+  '/api/auth/password/forgot',
 ]);
 
 const ACCOUNT_WINDOW_MS = 15 * 60 * 1000;

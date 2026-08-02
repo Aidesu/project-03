@@ -5,6 +5,7 @@ import { I18nService } from '../core/i18n';
 import { TranslationKey } from '../core/i18n';
 import { LanguageSwitcher } from '../shared/language-switcher/language-switcher';
 import { ThemeSwitch } from '../shared/theme-switch/theme-switch';
+import { VerifyEmailBanner } from '../shared/verify-email-banner/verify-email-banner';
 
 interface NavItem {
   labelKey: TranslationKey;
@@ -14,7 +15,14 @@ interface NavItem {
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LanguageSwitcher, ThemeSwitch],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    LanguageSwitcher,
+    ThemeSwitch,
+    VerifyEmailBanner,
+  ],
   templateUrl: './shell.html',
 })
 export class Shell {

@@ -93,6 +93,50 @@ export const es: Record<TranslationKey, string> = {
   'register.error':
     'No se ha podido completar el registro. Revisa tus datos e inténtalo de nuevo.',
 
+  // ---- Contraseña olvidada y verificación de correo --------------------
+  'login.forgotPassword': '¿Has olvidado tu contraseña?',
+  'forgotPassword.title': '¿Has olvidado tu contraseña?',
+  'forgotPassword.subtitle':
+    'Indica tu dirección y te enviaremos un enlace para elegir una nueva.',
+  'forgotPassword.submit': 'Enviar el enlace',
+  'forgotPassword.submitting': 'Enviando…',
+  'forgotPassword.sent':
+    'Si existe una cuenta con esta dirección, el enlace está en camino. Caduca en {minutes, plural, one {# minuto} other {# minutos}}.',
+  'forgotPassword.backToLogin': 'Volver al inicio de sesión',
+  'forgotPassword.error': 'Algo ha fallado. Inténtalo de nuevo en un momento.',
+  'forgotPassword.tooMany':
+    'Demasiados intentos. Espera un momento antes de volver a intentarlo.',
+  'resetPassword.title': 'Elige una contraseña nueva',
+  'resetPassword.subtitle': 'Este enlace sirve una vez, y por poco tiempo.',
+  'resetPassword.password': 'Contraseña nueva',
+  'resetPassword.confirm': 'Confirma la contraseña',
+  'resetPassword.mismatch': 'Las dos contraseñas no coinciden.',
+  'resetPassword.submit': 'Actualizar mi contraseña',
+  'resetPassword.submitting': 'Actualizando…',
+  'resetPassword.done':
+    'Tu contraseña se ha actualizado y todas las demás sesiones se han cerrado.',
+  'resetPassword.signIn': 'Iniciar sesión',
+  'resetPassword.invalidLink': 'Este enlace no es válido o ha caducado.',
+  'resetPassword.missingToken': 'Este enlace está incompleto.',
+  'resetPassword.requestNew': 'Pedir un enlace nuevo',
+  'resetPassword.error':
+    'No se ha podido actualizar la contraseña. Inténtalo de nuevo en un momento.',
+  'verifyEmail.title': 'Confirmación del correo',
+  'verifyEmail.checking': 'Confirmando tu dirección…',
+  'verifyEmail.done':
+    'Tu dirección está confirmada. Ya puedes recuperar tu cuenta por correo.',
+  'verifyEmail.invalid':
+    'Este enlace no es válido o ha caducado. Puedes pedir uno nuevo desde tu perfil.',
+  'verifyEmail.continue': 'Continuar',
+  'emailBanner.text':
+    'Confirma tu dirección de correo para poder recuperar tu cuenta si olvidas la contraseña.',
+  'emailBanner.resend': 'Reenviar el correo',
+  'emailBanner.sending': 'Enviando…',
+  'emailBanner.sent': 'Correo enviado: revisa tu bandeja de entrada.',
+  'emailBanner.error':
+    'No se ha podido enviar el correo. Inténtalo de nuevo en un momento.',
+  'emailBanner.dismiss': 'Ocultar',
+
   // ---- Dashboard -------------------------------------------------------
   'dashboard.greeting': '¡Hola {name}! 👋',
   'dashboard.loadError': 'Ahora mismo no se puede cargar tu progreso.',

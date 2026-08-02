@@ -4,6 +4,7 @@
 #   - db      : PostgreSQL 16   (primary database, used by Prisma)
 #   - redis   : Redis 7         (cache / sessions / job queue for reminders & follow-ups)
 #   - minio   : MinIO (S3 API)  (object storage for attachments: CVs, cover letters, offer PDFs)
+#   - mailpit : SMTP sink       (catches every outgoing mail -> http://localhost:8025)
 #
 # App layer (dev-mode, hot-reload, built from Dockerfile.dev in each folder):
 #   - backend  : NestJS API   (nest start --watch)  -> http://localhost:3000/api
@@ -87,6 +88,22 @@ services:
       retries: 5
       start_period: 10s
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: project03-mailpit
+    restart: unless-stopped
+    # Catches every outgoing mail instead of delivering it: password-reset and
+    # verification links open in the web UI, and nothing can escape to a real
+    # inbox from a dev machine.
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"     # SMTP, what the backend talks to
+      - "${MAILPIT_UI_PORT:-8025}:8025"       # Web UI: http://localhost:8025
+    volumes:
+      - mailpitdata:/data
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: 500
+
   backend:
     build:
       context: ./backend
@@ -106,6 +123,9 @@ services:
       # instead be signed against an endpoint the *browser* can resolve, so
       # this is deliberately the host-mapped port, not the service name.
       S3_PUBLIC_ENDPOINT: http://localhost:${MINIO_API_PORT:-9000}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_SECURE: "false"
       PORT: "3000"
       # tsc --watch's default fs.watch-based strategy misses some change
       # events on Docker bind mounts; polling is slower but reliable here.
@@ -125,6 +145,10 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      # No health condition: the image ships no shell for a healthcheck, and a
+      # mail relay that is not up yet only delays a mail, it does not break boot.
+      mailpit:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 10s
@@ -153,6 +177,7 @@ volumes:
   pgdata:
   redisdata:
   miniodata:
+  mailpitdata:
   backend_node_modules:
   frontend_node_modules:
   frontend_angular_cache:

@@ -3,14 +3,19 @@ import { validateEnv } from './env.validation';
 const STRONG_A = 'a'.repeat(48);
 const STRONG_B = 'b'.repeat(48);
 const STRONG_C = 'c'.repeat(48);
+const STRONG_D = 'd'.repeat(48);
 
 const baseProd = {
   NODE_ENV: 'production',
   DATABASE_URL: 'postgresql://u:p@db:5432/app',
   CORS_ORIGIN: 'https://app.example.com',
+  APP_URL: 'https://app.example.com',
+  SMTP_HOST: 'smtp.example.com',
+  MAIL_FROM: 'JobQuest <no-reply@app.example.com>',
   JWT_ACCESS_SECRET: STRONG_A,
   JWT_REFRESH_SECRET: STRONG_B,
   CSRF_SECRET: STRONG_C,
+  EMAIL_TOKEN_SECRET: STRONG_D,
 };
 
 describe('validateEnv', () => {
@@ -27,6 +32,7 @@ describe('validateEnv', () => {
         JWT_ACCESS_SECRET: 'change-me-access-secret',
         JWT_REFRESH_SECRET: 'change-me-refresh-secret',
         CSRF_SECRET: 'change-me-csrf-secret',
+        EMAIL_TOKEN_SECRET: 'change-me-email-token-secret',
       }),
     ).not.toThrow();
   });
@@ -80,6 +86,26 @@ describe('validateEnv', () => {
     expect(() =>
       validateEnv({ ...baseProd, TRUSTED_PROXY_HOPS: '1' }),
     ).not.toThrow();
+  });
+
+  // Every mailed link is built from APP_URL, and without a relay account
+  // recovery fails silently — the one outage a user cannot work around.
+  it('refuses a missing or plaintext APP_URL in production', () => {
+    expect(() => validateEnv({ ...baseProd, APP_URL: '' })).toThrow(
+      /APP_URL is required/,
+    );
+    expect(() =>
+      validateEnv({ ...baseProd, APP_URL: 'http://app.example.com' }),
+    ).toThrow(/APP_URL must use https/);
+  });
+
+  it('refuses to boot in production without a mail relay', () => {
+    expect(() => validateEnv({ ...baseProd, SMTP_HOST: '' })).toThrow(
+      /SMTP_HOST is required/,
+    );
+    expect(() => validateEnv({ ...baseProd, MAIL_FROM: '' })).toThrow(
+      /MAIL_FROM is required/,
+    );
   });
 
   it('reports every problem at once rather than one per restart', () => {
