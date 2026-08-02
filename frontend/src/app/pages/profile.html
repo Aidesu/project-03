@@ -7,7 +7,7 @@
 
 <div class="mt-8 flex flex-col gap-8">
   <!-- Avatar -->
-  <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+  <section class="rounded-2xl border border-slate-100 bg-surface p-6 shadow-sm md:p-8">
     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
       {{ t('profile.avatar.title') }}
     </h2>
@@ -52,14 +52,14 @@
         </div>
         <p class="text-xs text-slate-400">{{ t('profile.avatar.hint') }}</p>
         @if (avatarError(); as key) {
-          <p class="text-xs text-rose-600">{{ t(key) }}</p>
+          <p class="text-xs text-rose-600 dark:text-rose-400">{{ t(key) }}</p>
         }
       </div>
     </div>
   </section>
 
   <!-- Account info -->
-  <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+  <section class="rounded-2xl border border-slate-100 bg-surface p-6 shadow-sm md:p-8">
     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
       {{ t('profile.account.title') }}
     </h2>
@@ -93,7 +93,7 @@
             class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
           />
           @if (accountForm.controls.email.touched && accountForm.controls.email.invalid) {
-            <span class="text-xs text-rose-600">{{ t('profile.account.emailInvalid') }}</span>
+            <span class="text-xs text-rose-600 dark:text-rose-400">{{ t('profile.account.emailInvalid') }}</span>
           }
         </label>
       </div>
@@ -112,13 +112,13 @@
       </label>
 
       @if (accountError(); as key) {
-        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div class="alert alert--error">
           {{ t(key) }}
         </div>
       }
       @if (accountSuccess()) {
         <div
-          class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          class="alert alert--success"
         >
           {{ t('profile.account.success') }}
         </div>
@@ -137,7 +137,7 @@
   </section>
 
   <!-- Password -->
-  <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+  <section class="rounded-2xl border border-slate-100 bg-surface p-6 shadow-sm md:p-8">
     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
       {{ t('profile.password.title') }}
     </h2>
@@ -175,7 +175,7 @@
             passwordForm.controls.newPassword.touched &&
             passwordForm.controls.newPassword.hasError('minlength')
           ) {
-            <span class="text-xs text-rose-600">{{
+            <span class="text-xs text-rose-600 dark:text-rose-400">{{
               t('profile.password.minError', { min: passwordMin })
             }}</span>
           }
@@ -195,19 +195,19 @@
             passwordForm.controls.confirmNewPassword.touched &&
             passwordForm.hasError('mismatch')
           ) {
-            <span class="text-xs text-rose-600">{{ t('profile.password.mismatch') }}</span>
+            <span class="text-xs text-rose-600 dark:text-rose-400">{{ t('profile.password.mismatch') }}</span>
           }
         </label>
       </div>
 
       @if (passwordError(); as key) {
-        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div class="alert alert--error">
           {{ t(key) }}
         </div>
       }
       @if (passwordSuccess()) {
         <div
-          class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          class="alert alert--success"
         >
           {{ t('profile.password.success') }}
         </div>
@@ -226,7 +226,7 @@
   </section>
 
   <!-- Settings -->
-  <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+  <section class="rounded-2xl border border-slate-100 bg-surface p-6 shadow-sm md:p-8">
     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
       {{ t('profile.settings.title') }}
     </h2>
@@ -246,7 +246,7 @@
             }}</span>
             <select
               formControlName="locale"
-              class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             >
               @for (l of locales; track l.value) {
                 <option [value]="l.value">{{ l.label }}</option>
@@ -260,7 +260,7 @@
             }}</span>
             <select
               formControlName="timezone"
-              class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             >
               @for (tz of timezones; track tz) {
                 <option [value]="tz">{{ tz }}</option>
@@ -295,14 +295,14 @@
 
         @if (settingsError(); as key) {
           <div
-            class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+            class="alert alert--error"
           >
             {{ t(key) }}
           </div>
         }
         @if (settingsSuccess()) {
           <div
-            class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+            class="alert alert--success"
           >
             {{ t('profile.settings.success') }}
           </div>
@@ -322,7 +322,7 @@
   </section>
 
   <!-- Danger zone -->
-  <section class="rounded-2xl border border-rose-200 bg-rose-50/40 p-6 shadow-sm md:p-8">
+  <section class="rounded-2xl border border-rose-200 bg-rose-50/40 dark:border-rose-500/30 dark:bg-rose-500/8 p-6 shadow-sm md:p-8">
     <h2 class="text-sm font-semibold uppercase tracking-wider text-rose-500">
       {{ t('profile.danger.title') }}
     </h2>
@@ -359,7 +359,7 @@
       </div>
 
       @if (deleteError(); as key) {
-        <div class="rounded-lg border border-rose-200 bg-white px-4 py-3 text-sm text-rose-700">
+        <div class="alert alert--error">
           {{ t(key) }}
         </div>
       }

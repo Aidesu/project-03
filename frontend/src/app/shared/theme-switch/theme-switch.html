@@ -1,0 +1,33 @@
+@if (variant() === 'nav') {
+  <!-- Same padding grid as the nav rows, so the switch lines up with their
+       icon column instead of floating in the footer. -->
+  <div
+    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600"
+  >
+    <span class="w-4 shrink-0 text-center text-base" aria-hidden="true">◐</span>
+    <span class="flex-1 truncate">{{ t('theme.label') }}</span>
+    <button
+      type="button"
+      role="switch"
+      [attr.aria-checked]="isDark()"
+      [attr.aria-label]="t('theme.toggleAria')"
+      [title]="label()"
+      (click)="toggle()"
+      class="theme-switch"
+    >
+      <span class="theme-switch__knob"></span>
+    </button>
+  </div>
+} @else {
+  <button
+    type="button"
+    role="switch"
+    [attr.aria-checked]="isDark()"
+    [attr.aria-label]="t('theme.toggleAria')"
+    [title]="label()"
+    (click)="toggle()"
+    class="theme-switch"
+  >
+    <span class="theme-switch__knob"></span>
+  </button>
+}

@@ -13,7 +13,7 @@
           class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
         />
         @if (form.controls.firstName.touched && form.controls.firstName.invalid) {
-          <span class="text-xs text-rose-600">{{ t('contactForm.firstNameRequired') }}</span>
+          <span class="text-xs text-rose-600 dark:text-rose-400">{{ t('contactForm.firstNameRequired') }}</span>
         }
       </label>
 
@@ -41,7 +41,7 @@
         <span class="text-sm font-medium text-slate-700">{{ t('contactForm.company') }}</span>
         <select
           formControlName="companyId"
-          class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
         >
           <option value="">{{ t('contactForm.companyNone') }}</option>
           @for (c of companies(); track c.id) {
@@ -62,7 +62,7 @@
           class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
         />
         @if (form.controls.email.touched && form.controls.email.invalid) {
-          <span class="text-xs text-rose-600">{{ t('contactForm.emailInvalid') }}</span>
+          <span class="text-xs text-rose-600 dark:text-rose-400">{{ t('contactForm.emailInvalid') }}</span>
         }
       </label>
 
@@ -99,7 +99,7 @@
     </label>
 
     @if (formError(); as key) {
-      <p class="text-sm text-rose-600">{{ t(key) }}</p>
+      <p class="text-sm text-rose-600 dark:text-rose-400">{{ t(key) }}</p>
     }
 
     <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">

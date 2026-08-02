@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Theme is an explicit choice on <html>, not a media query: the user can
+   disagree with their OS, and the switch has to mean something. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 /* ------------------------------------------------------------------ *
  * Design tokens — "carnet d'expédition": your job search kept like a  *
  * field journal. Moss ink carries the product; an ember trail marks   *
@@ -51,6 +55,46 @@
   /* Layered elevation — replaces flat `shadow-sm` where a surface needs to lift. */
   --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px -14px rgba(15, 23, 42, 0.12);
   --shadow-elevated: 0 24px 48px -20px rgba(29, 39, 23, 0.45), 0 8px 20px -10px rgba(15, 23, 42, 0.16);
+
+  /* The panel a card is drawn on. Split out from `white` because `white` also
+     means "text on a filled button", which must stay white after dark. */
+  --color-surface: #ffffff;
+  /* What dims the page behind a dialog. */
+  --color-overlay: rgb(15 23 42 / 40%);
+}
+
+/* ------------------------------------------------------------------ *
+ * Dusk. Not an inverted grey: the neutrals keep a trace of the moss    *
+ * so the brand green still sits in its own landscape rather than on    *
+ * a borrowed slate one.                                                *
+ *                                                                      *
+ * The slate ramp is redefined rather than duplicated in `dark:`        *
+ * variants across ~500 utilities. Read it as intent, not as a fixed    *
+ * shade: `text-slate-900` means "the strongest text", `bg-slate-50`    *
+ * means "the page beneath the cards" — true in both themes.            *
+ * ------------------------------------------------------------------ */
+[data-theme='dark'] {
+  /* Native widgets — scrollbars, the date picker, autofill — follow this. */
+  color-scheme: dark;
+
+  --color-slate-50: #111409;
+  --color-slate-100: #272c1d;
+  --color-slate-200: #343a27;
+  --color-slate-300: #454d34;
+  --color-slate-400: #8d947f;
+  --color-slate-500: #a4ab95;
+  --color-slate-600: #b9bfab;
+  --color-slate-700: #ced3c1;
+  --color-slate-800: #e0e4d7;
+  --color-slate-900: #f1f3ea;
+
+  --color-surface: #1a1e12;
+  --color-overlay: rgb(6 8 3 / 70%);
+
+  /* Depth cannot come from a drop shadow on a dark page, so cards lift by
+     edge instead — and the shadows stay only to seat filled controls. */
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 40%), 0 12px 28px -18px rgb(0 0 0 / 70%);
+  --shadow-elevated: 0 28px 56px -20px rgb(0 0 0 / 80%), 0 8px 20px -10px rgb(0 0 0 / 50%);
 }
 
 /* Button glyphs as alpha masks rather than inline SVG: the icon is decorative
@@ -130,9 +174,25 @@
     box-shadow: 0 0 0 theme(--color-brand-800);
   }
 
+  /* Moss deepens after dark, so the fill is lifted a step to keep the same
+     presence against the page it now sits on. */
+  .btn--primary:where([data-theme='dark'] *) {
+    @apply bg-brand-500 hover:bg-brand-400;
+    box-shadow:
+      0 1px 0 theme(--color-brand-800),
+      0 2px 10px -2px rgb(98 132 63 / 35%);
+  }
+
   .btn--secondary {
-    @apply border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800;
+    @apply border border-slate-200 bg-surface text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800;
     box-shadow: 0 1px 0 rgb(15 23 42 / 5%);
+  }
+
+  /* `slate-50` is *below* the surface after dark, so hovering would dig a hole
+     rather than lift the control. */
+  .btn--secondary:where([data-theme='dark'] *) {
+    @apply hover:bg-slate-100;
+    box-shadow: 0 1px 0 rgb(0 0 0 / 35%);
   }
 
   .btn--secondary:not(:disabled):active {
@@ -145,7 +205,11 @@
   }
 
   .btn--danger {
-    @apply border border-rose-200 bg-white text-rose-600 hover:border-rose-300 hover:bg-rose-50;
+    @apply border border-rose-200 bg-surface text-rose-600 hover:border-rose-300 hover:bg-rose-50;
+  }
+
+  .btn--danger:where([data-theme='dark'] *) {
+    @apply border-rose-500/35 text-rose-300 hover:border-rose-500/60 hover:bg-rose-500/10;
   }
 
   .btn--danger:focus-visible {
@@ -240,6 +304,30 @@
     transform: translateX(2px);
   }
 
+  /* ------------------------------------------------------------------ *
+   * Alerts. A tinted panel in light; the same hue held as a translucent  *
+   * wash in dark, because a pale fill on a dark page reads as a hole.    *
+   * ------------------------------------------------------------------ */
+
+  .alert {
+    @apply rounded-lg border px-4 py-3 text-sm;
+  }
+
+  .alert--error {
+    @apply border-rose-200 bg-rose-50 text-rose-700
+      dark:border-rose-500/35 dark:bg-rose-500/10 dark:text-rose-300;
+  }
+
+  .alert--success {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-700
+      dark:border-emerald-500/35 dark:bg-emerald-500/10 dark:text-emerald-300;
+  }
+
+  /* Page-level: same colours, the roomier shape used for a failed load. */
+  .alert--block {
+    @apply rounded-2xl px-5 py-4;
+  }
+
   /* Links that leave the app say so, in the same visual language. */
   .link-external {
     @apply inline-flex items-center gap-1.5 font-medium text-brand-600 underline decoration-brand-600/25 underline-offset-4 transition hover:text-brand-700 hover:decoration-brand-600/60;
@@ -254,6 +342,68 @@
 
   .link-external:focus-visible {
     @apply rounded-sm outline-none ring-2 ring-brand-500/50 ring-offset-2;
+  }
+
+  .link-external:where([data-theme='dark'] *) {
+    @apply text-brand-300 decoration-brand-300/30 hover:text-brand-200 hover:decoration-brand-300/70;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Theme switch. The meaning is carried by light, not by a sun-and-moon *
+   * pictogram: the knob leaves a warm lit disc with a low halo and       *
+   * arrives a cold pale one with none, while the track travels from      *
+   * midday moss to the deepest green in the ramp.                        *
+   *                                                                      *
+   * A contour texture on the track was tried and cut — at 44px it read   *
+   * as stripes, and the temperature shift already carries the state.     *
+   * ------------------------------------------------------------------ */
+
+  .theme-switch {
+    @apply relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center
+      rounded-full border transition-colors duration-500;
+    border-color: theme(--color-brand-300);
+    background-color: theme(--color-brand-100);
+  }
+
+  .theme-switch:focus-visible {
+    @apply outline-none ring-2 ring-brand-500/50 ring-offset-2 ring-offset-slate-50;
+  }
+
+  .theme-switch:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .theme-switch__knob {
+    @apply relative z-10 block h-4.5 w-4.5 rounded-full;
+    margin-inline-start: 3px;
+    background: radial-gradient(circle at 35% 30%, #ffffff, theme(--color-brand-100));
+    box-shadow:
+      0 1px 2px rgb(29 39 23 / 35%),
+      0 0 0 1px rgb(29 39 23 / 8%),
+      /* Low sun: a warm halo on the lit side of the ridge. */ 0 0 9px 2px
+        rgb(201 154 62 / 65%);
+    transition:
+      transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      background 500ms ease,
+      box-shadow 500ms ease;
+  }
+
+  .theme-switch[aria-checked='true'] {
+    border-color: theme(--color-brand-700);
+    background-color: theme(--color-brand-900);
+  }
+
+  .theme-switch[aria-checked='true'] .theme-switch__knob {
+    transform: translateX(1.25rem);
+    background: radial-gradient(
+      circle at 35% 30%,
+      theme(--color-brand-100),
+      theme(--color-brand-300)
+    );
+    box-shadow:
+      0 1px 3px rgb(0 0 0 / 55%),
+      0 0 0 1px rgb(0 0 0 / 25%),
+      /* Moonlight is cold and carries no halo. */ 0 0 6px 0 rgb(199 216 172 / 25%);
   }
 
   .medal-ring {
@@ -348,5 +498,12 @@
   .btn--prev:not(:disabled):hover::before,
   .btn--next:not(:disabled):hover::after {
     transform: none;
+  }
+
+  /* The switch still moves — its position *is* the state — but it goes
+     straight there, with no travel and no overshoot. */
+  .theme-switch,
+  .theme-switch__knob {
+    transition: none;
   }
 }

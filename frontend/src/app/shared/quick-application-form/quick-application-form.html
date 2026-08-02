@@ -11,7 +11,7 @@
         class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
       />
       @if (form.controls.position.touched && form.controls.position.invalid) {
-        <span class="text-xs text-rose-600">{{
+        <span class="text-xs text-rose-600 dark:text-rose-400">{{
           t('applicationForm.positionRequired')
         }}</span>
       }
@@ -35,7 +35,7 @@
         }}</span>
         <select
           formControlName="status"
-          class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
         >
           @for (s of statuses; track s) {
             <option [value]="s">{{ t(statusKeys[s]) }}</option>
@@ -48,7 +48,7 @@
 
     @if (error(); as key) {
       <div
-        class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+        class="alert alert--error"
       >
         {{ t(key) }}
       </div>
@@ -61,7 +61,7 @@
         type="button"
         (click)="submit(true)"
         [disabled]="saving()"
-        class="btn btn--ghost btn--next mr-auto text-brand-700 hover:text-brand-800 hover:bg-brand-50"
+        class="btn btn--ghost btn--next mr-auto text-brand-700 hover:bg-brand-50 hover:text-brand-800 dark:text-brand-300 dark:hover:bg-brand-500/15 dark:hover:text-brand-200"
       >
         {{ t('quickAdd.saveAndDetails') }}
       </button>

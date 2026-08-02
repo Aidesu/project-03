@@ -43,6 +43,14 @@ export const en = {
   'shell.viewProfile': 'View profile',
   'shell.avatarAlt': 'Profile picture',
 
+  // ---- Theme -----------------------------------------------------------
+  'theme.label': 'Appearance',
+  'theme.light': 'Daylight',
+  'theme.dark': 'Dusk',
+  'theme.toggleAria': 'Switch between daylight and dusk',
+  'theme.followSystem': 'Follow my system',
+  'theme.followingSystem': 'Following your system setting.',
+
   // ---- Modal -----------------------------------------------------------
   'modal.close': 'Close',
 

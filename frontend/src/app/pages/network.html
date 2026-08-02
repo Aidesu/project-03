@@ -61,7 +61,7 @@
       [(ngModel)]="companySearch"
       (keyup.enter)="applySearch()"
       [placeholder]="t('network.searchCompanies')"
-      class="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      class="w-full max-w-xs rounded-lg border border-slate-300 bg-surface px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
     />
   } @else {
     <input
@@ -69,7 +69,7 @@
       [(ngModel)]="contactSearch"
       (keyup.enter)="applySearch()"
       [placeholder]="t('network.searchContacts')"
-      class="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      class="w-full max-w-xs rounded-lg border border-slate-300 bg-surface px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
     />
   }
   <button
@@ -85,9 +85,9 @@
 </div>
 
 @if (loading()) {
-  <div class="mt-6 h-64 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+  <div class="mt-6 h-64 animate-pulse rounded-2xl border border-slate-100 bg-surface"></div>
 } @else if (error()) {
-  <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+  <div class="mt-6 alert alert--error alert--block">
     {{ t('network.loadError') }}
   </div>
 } @else if (tab() === 'companies') {
@@ -95,7 +95,7 @@
   @if (companies(); as d) {
     @if (d.items.length === 0) {
       <div
-        class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-16 text-center"
+        class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-surface px-5 py-16 text-center"
       >
         <p class="text-sm font-medium text-slate-600">
           {{ t('network.companies.empty.title') }}
@@ -112,7 +112,7 @@
       <ul class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         @for (c of d.items; track c.id) {
           <li
-            class="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-slate-200 hover:shadow-md"
+            class="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-surface p-4 shadow-sm transition hover:border-slate-200 hover:shadow-md"
           >
             <div class="flex items-start gap-3">
               <a
@@ -188,7 +188,7 @@
   @if (contacts(); as d) {
     @if (d.items.length === 0) {
       <div
-        class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-16 text-center"
+        class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-surface px-5 py-16 text-center"
       >
         <p class="text-sm font-medium text-slate-600">
           {{ t('network.contacts.empty.title') }}
@@ -205,7 +205,7 @@
       <ul class="mt-6 flex flex-col gap-3">
         @for (c of d.items; track c.id) {
           <li
-            class="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-slate-200 hover:shadow-md"
+            class="flex items-center gap-4 rounded-2xl border border-slate-100 bg-surface p-4 shadow-sm transition hover:border-slate-200 hover:shadow-md"
           >
             <a
               [routerLink]="['/network/contacts', c.id]"

@@ -11,13 +11,13 @@
   </header>
 
   @if (!ready()) {
-    <div class="mt-6 h-96 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+    <div class="mt-6 h-96 animate-pulse rounded-2xl border border-slate-100 bg-surface"></div>
   } @else {
   <form
     [formGroup]="form"
     (ngSubmit)="submit()"
     novalidate
-    class="mt-6 flex flex-col gap-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8"
+    class="mt-6 flex flex-col gap-6 rounded-2xl border border-slate-100 bg-surface p-6 shadow-sm md:p-8"
   >
     <!-- The essentials: the only block that is always open -->
     <fieldset class="flex flex-col gap-4">
@@ -36,7 +36,7 @@
           class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
         />
         @if (form.controls.position.touched && form.controls.position.invalid) {
-          <span class="text-xs text-rose-600">{{
+          <span class="text-xs text-rose-600 dark:text-rose-400">{{
             t('applicationForm.positionRequired')
           }}</span>
         }
@@ -85,7 +85,7 @@
             }}</span>
             <select
               formControlName="status"
-              class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             >
               @for (s of statuses; track s) {
                 <option [value]="s">{{ t(statusKeys[s]) }}</option>
@@ -134,7 +134,7 @@
               }}</span>
               <select
                 formControlName="source"
-                class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               >
                 <option value="">—</option>
                 @for (o of sourceOptions(); track o.value) {
@@ -148,7 +148,7 @@
               }}</span>
               <select
                 formControlName="workMode"
-                class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               >
                 <option value="">—</option>
                 @for (o of workModeOptions(); track o.value) {
@@ -162,7 +162,7 @@
               }}</span>
               <select
                 formControlName="employmentType"
-                class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               >
                 <option value="">—</option>
                 @for (o of employmentTypeOptions(); track o.value) {
@@ -178,7 +178,7 @@
             }}</span>
             <select
               formControlName="excitement"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 sm:w-48"
+              class="w-full rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 sm:w-48"
             >
               <option [ngValue]="null">—</option>
               @for (n of excitementLevels; track n) {
@@ -265,7 +265,7 @@
               }}</span>
               <select
                 formControlName="salaryPeriod"
-                class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                class="rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               >
                 @for (o of salaryPeriodOptions(); track o.value) {
                   <option [value]="o.value">{{ o.label }}</option>
@@ -277,12 +277,12 @@
           @if (
             form.controls.salaryMin.invalid || form.controls.salaryMax.invalid
           ) {
-            <span class="text-xs text-rose-600">{{
+            <span class="text-xs text-rose-600 dark:text-rose-400">{{
               t('applicationForm.amountInvalid')
             }}</span>
           }
           @if (form.controls.salaryCurrency.invalid) {
-            <span class="text-xs text-rose-600">{{
+            <span class="text-xs text-rose-600 dark:text-rose-400">{{
               t('applicationForm.currencyInvalid')
             }}</span>
           }
@@ -343,7 +343,7 @@
               class="resize-y rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             ></textarea>
             @if (form.controls.notes.invalid) {
-              <span class="text-xs text-rose-600">{{
+              <span class="text-xs text-rose-600 dark:text-rose-400">{{
                 t('applicationForm.notesTooLong')
               }}</span>
             }
@@ -354,7 +354,7 @@
 
     @if (error(); as key) {
       <div
-        class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+        class="alert alert--error"
       >
         {{ t(key) }}
       </div>

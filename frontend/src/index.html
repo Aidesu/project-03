@@ -6,6 +6,26 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!--
+    Runs before first paint, so a dark-mode user never gets a white flash while
+    Angular boots. Keep the storage key in sync with core/theme.service.ts,
+    which owns the preference from bootstrap onwards.
+  -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('jobquest.theme');
+        var dark =
+          stored === 'dark' ||
+          (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var root = document.documentElement;
+        root.setAttribute('data-theme', dark ? 'dark' : 'light');
+        root.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (e) {
+        /* Storage or matchMedia unavailable: light is a safe first paint. */
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link

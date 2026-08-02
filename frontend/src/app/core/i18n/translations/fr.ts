@@ -42,6 +42,14 @@ export const fr: Record<TranslationKey, string> = {
   'shell.viewProfile': 'Voir le profil',
   'shell.avatarAlt': 'Photo de profil',
 
+  // ---- Theme -----------------------------------------------------------
+  'theme.label': 'Apparence',
+  'theme.light': 'Plein jour',
+  'theme.dark': 'Crépuscule',
+  'theme.toggleAria': 'Basculer entre plein jour et crépuscule',
+  'theme.followSystem': 'Suivre mon système',
+  'theme.followingSystem': 'Ton système décide pour l’instant.',
+
   // ---- Modal -----------------------------------------------------------
   'modal.close': 'Fermer',
 

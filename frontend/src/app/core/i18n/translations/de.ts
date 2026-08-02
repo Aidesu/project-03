@@ -43,6 +43,14 @@ export const de: Record<TranslationKey, string> = {
   'shell.viewProfile': 'Profil ansehen',
   'shell.avatarAlt': 'Profilbild',
 
+  // ---- Theme -----------------------------------------------------------
+  'theme.label': 'Darstellung',
+  'theme.light': 'Tageslicht',
+  'theme.dark': 'Dämmerung',
+  'theme.toggleAria': 'Zwischen Tageslicht und Dämmerung wechseln',
+  'theme.followSystem': 'Meinem System folgen',
+  'theme.followingSystem': 'Dein System entscheidet gerade.',
+
   // ---- Modal -----------------------------------------------------------
   'modal.close': 'Schließen',
 

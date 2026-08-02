@@ -7,9 +7,9 @@
   >
 
   @if (loading()) {
-    <div class="mt-4 h-64 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+    <div class="mt-4 h-64 animate-pulse rounded-2xl border border-slate-100 bg-surface"></div>
   } @else if (error()) {
-    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+    <div class="mt-4 alert alert--error alert--block">
       {{ t('contactDetail.notFound') }}
     </div>
   } @else if (detail(); as d) {
@@ -56,7 +56,7 @@
     </header>
 
     <!-- Coordinates -->
-    <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+    <section class="mt-6 rounded-2xl border border-slate-100 bg-surface p-5 shadow-sm">
       <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
         {{ t('contactDetail.contactInfo') }}
       </h2>
@@ -105,7 +105,7 @@
     </section>
 
     @if (d.notes) {
-      <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <section class="mt-6 rounded-2xl border border-slate-100 bg-surface p-5 shadow-sm">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
           {{ t('contactDetail.notes.title') }}
         </h2>
@@ -114,7 +114,7 @@
     }
 
     <!-- Interviews -->
-    <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+    <section class="mt-6 rounded-2xl border border-slate-100 bg-surface p-5 shadow-sm">
       <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
         {{ t('contactDetail.interviews.title', { count: d._count.interviews }) }}
       </h2>

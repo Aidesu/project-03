@@ -22,7 +22,7 @@
     <ul
       [id]="listId"
       role="listbox"
-      class="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+      class="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-200 bg-surface py-1 shadow-lg"
     >
       @for (company of suggestions(); track company.id; let i = $index) {
         <li
@@ -31,8 +31,8 @@
           [attr.aria-selected]="i === activeIndex()"
           (mousedown)="$event.preventDefault()"
           (click)="select(company)"
-          class="flex cursor-pointer items-baseline justify-between gap-3 px-3 py-2 hover:bg-slate-50"
-          [class.bg-brand-50]="i === activeIndex()"
+          class="flex cursor-pointer items-baseline justify-between gap-3 px-3 py-2 hover:bg-slate-100"
+          [class]="i === activeIndex() ? 'bg-brand-50 dark:bg-brand-500/15' : ''"
         >
           <span class="truncate text-sm font-medium text-slate-700">{{
             company.name

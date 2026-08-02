@@ -10,7 +10,7 @@
     [class]="
       variant() === 'nav'
         ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60'
-        : 'flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60'
+        : 'flex items-center gap-2 rounded-lg border border-slate-200 bg-surface px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60'
     "
   >
     <span class="flex shrink-0 justify-center" [class.w-4]="variant() === 'nav'">
@@ -31,7 +31,7 @@
       [attr.aria-label]="t('language.label')"
       (keydown)="onPanelKeydown($event)"
       [class]="
-        'absolute z-30 min-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg ' +
+        'absolute z-30 min-w-full overflow-hidden rounded-lg border border-slate-200 bg-surface py-1 shadow-lg ' +
         (placement() === 'top-start'
           ? 'bottom-full left-0 mb-1.5'
           : placement() === 'bottom-end'
