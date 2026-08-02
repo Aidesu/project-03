@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -10,6 +10,13 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import {
+  I18nService,
+  LOCALE_NAMES,
+  SUPPORTED_LOCALES,
+  TranslationKey,
+  isLocale,
+} from '../core/i18n';
 import { initialsOf } from '../core/initials';
 import {
   ChangePasswordInput,
@@ -20,7 +27,8 @@ import {
 
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const DELETE_CONFIRMATION_TEXT = 'SUPPRIMER';
+// Mirrors the backend RegisterDto / ChangePasswordDto minimum.
+const PASSWORD_MIN = 12;
 
 function passwordsMatchValidator(): ValidatorFn {
   return (group: AbstractControl): ValidationErrors | null => {
@@ -31,9 +39,14 @@ function passwordsMatchValidator(): ValidatorFn {
   };
 }
 
-function exactTextValidator(expected: string): ValidatorFn {
+/**
+ * The confirmation word depends on the active language, so the check reads it
+ * lazily instead of closing over a fixed string — switching language while the
+ * danger-zone form is open must not leave the validator expecting the old word.
+ */
+function exactTextValidator(expected: () => string): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null =>
-    control.value === expected ? null : { exactText: true };
+    control.value === expected() ? null : { exactText: true };
 }
 
 @Component({
@@ -46,16 +59,21 @@ export class Profile {
   private readonly profileApi = inject(ProfileService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18nService);
 
+  readonly t = this.i18n.t;
   readonly user = this.auth.user;
-  readonly deleteConfirmationText = DELETE_CONFIRMATION_TEXT;
+  readonly passwordMin = PASSWORD_MIN;
+
+  /** The word the user must type to delete, in the language they are reading. */
+  readonly deleteConfirmationText = computed(() => this.t('profile.danger.confirmWord'));
 
   readonly initials = computed(() => initialsOf(this.user()?.name || this.user()?.email));
 
-  readonly locales = [
-    { value: 'fr', label: 'Français' },
-    { value: 'en', label: 'English' },
-  ];
+  readonly locales = SUPPORTED_LOCALES.map((value) => ({
+    value,
+    label: LOCALE_NAMES[value],
+  }));
 
   readonly timezones: string[] =
     typeof Intl.supportedValuesOf === 'function'
@@ -64,7 +82,7 @@ export class Profile {
 
   // ---- Avatar --------------------------------------------------------
   readonly avatarUploading = signal(false);
-  readonly avatarError = signal<string | null>(null);
+  readonly avatarError = signal<TranslationKey | null>(null);
 
   // ---- Account info ---------------------------------------------------
   readonly accountForm = this.fb.nonNullable.group({
@@ -77,7 +95,7 @@ export class Profile {
     currentPassword: this.fb.nonNullable.control('', [Validators.maxLength(128)]),
   });
   readonly accountSaving = signal(false);
-  readonly accountError = signal<string | null>(null);
+  readonly accountError = signal<TranslationKey | null>(null);
   readonly accountSuccess = signal(false);
 
   // ---- Password ---------------------------------------------------
@@ -97,7 +115,7 @@ export class Profile {
     { validators: [passwordsMatchValidator()] },
   );
   readonly passwordSaving = signal(false);
-  readonly passwordError = signal<string | null>(null);
+  readonly passwordError = signal<TranslationKey | null>(null);
   readonly passwordSuccess = signal(false);
 
   // ---- Settings ---------------------------------------------------
@@ -113,7 +131,7 @@ export class Profile {
   });
   readonly settingsLoading = signal(true);
   readonly settingsSaving = signal(false);
-  readonly settingsError = signal<string | null>(null);
+  readonly settingsError = signal<TranslationKey | null>(null);
   readonly settingsSuccess = signal(false);
 
   // ---- Danger zone ---------------------------------------------------
@@ -124,16 +142,24 @@ export class Profile {
     ]),
     confirmation: this.fb.nonNullable.control('', [
       Validators.required,
-      exactTextValidator(DELETE_CONFIRMATION_TEXT),
+      exactTextValidator(() => this.deleteConfirmationText()),
     ]),
   });
   readonly deleting = signal(false);
-  readonly deleteError = signal<string | null>(null);
+  readonly deleteError = signal<TranslationKey | null>(null);
 
   constructor() {
     const u = this.user();
     this.accountForm.patchValue({ name: u?.name ?? '', email: u?.email ?? '' });
     this.loadSettings();
+
+    // The expected confirmation word is language-dependent, so an already
+    // typed value has to be re-checked when the language changes — otherwise
+    // the field would still read "valid" against the previous language's word.
+    effect(() => {
+      this.deleteConfirmationText();
+      this.deleteForm.controls.confirmation.updateValueAndValidity();
+    });
   }
 
   // ---- Avatar --------------------------------------------------------
@@ -146,11 +172,11 @@ export class Profile {
 
     this.avatarError.set(null);
     if (!AVATAR_ALLOWED_TYPES.has(file.type)) {
-      this.avatarError.set('Formats acceptés : JPEG, PNG, WebP.');
+      this.avatarError.set('profile.avatar.badType');
       return;
     }
     if (file.size > AVATAR_MAX_BYTES) {
-      this.avatarError.set('Image trop volumineuse (2 Mo maximum).');
+      this.avatarError.set('profile.avatar.tooLarge');
       return;
     }
 
@@ -162,9 +188,7 @@ export class Profile {
       },
       error: () => {
         this.avatarUploading.set(false);
-        this.avatarError.set(
-          "Échec de l'envoi — vérifie qu'il s'agit bien d'une image valide.",
-        );
+        this.avatarError.set('profile.avatar.uploadFailed');
       },
     });
   }
@@ -180,7 +204,7 @@ export class Profile {
       },
       error: () => {
         this.avatarUploading.set(false);
-        this.avatarError.set('Impossible de retirer la photo.');
+        this.avatarError.set('profile.avatar.removeFailed');
       },
     });
   }
@@ -199,9 +223,7 @@ export class Profile {
     const emailChanged = !!currentUser && nextEmail !== currentUser.email;
 
     if (emailChanged && !v.currentPassword) {
-      this.accountError.set(
-        "Le mot de passe actuel est requis pour changer d'adresse email.",
-      );
+      this.accountError.set('profile.account.passwordRequiredForEmail');
       return;
     }
 
@@ -225,10 +247,10 @@ export class Profile {
     });
   }
 
-  private mapAccountError(err: HttpErrorResponse): string {
-    if (err.status === 403) return 'Mot de passe actuel incorrect.';
-    if (err.status === 409) return 'Cette adresse email est déjà utilisée.';
-    return "Impossible d'enregistrer les modifications. Réessaie.";
+  private mapAccountError(err: HttpErrorResponse): TranslationKey {
+    if (err.status === 403) return 'profile.account.wrongPassword';
+    if (err.status === 409) return 'profile.account.emailTaken';
+    return 'profile.account.saveError';
   }
 
   // ---- Password ---------------------------------------------------
@@ -261,13 +283,11 @@ export class Profile {
       error: (err: HttpErrorResponse) => {
         this.passwordSaving.set(false);
         if (err.status === 403) {
-          this.passwordError.set('Mot de passe actuel incorrect.');
+          this.passwordError.set('profile.account.wrongPassword');
         } else if (err.status === 400) {
-          this.passwordError.set(
-            "Le nouveau mot de passe doit être différent de l'actuel.",
-          );
+          this.passwordError.set('profile.password.sameAsCurrent');
         } else {
-          this.passwordError.set('Impossible de changer le mot de passe. Réessaie.');
+          this.passwordError.set('profile.password.error');
         }
       },
     });
@@ -290,7 +310,7 @@ export class Profile {
       },
       error: () => {
         this.settingsLoading.set(false);
-        this.settingsError.set('Impossible de charger les paramètres.');
+        this.settingsError.set('profile.settings.loadError');
       },
     });
   }
@@ -300,18 +320,27 @@ export class Profile {
       this.settingsForm.markAllAsTouched();
       return;
     }
+    // Defence in depth: the select only offers supported locales, but the DOM
+    // is not a trust boundary and the server allowlist must not be the only check.
+    if (!isLocale(this.settingsForm.controls.locale.value)) {
+      this.settingsError.set('profile.settings.saveError');
+      return;
+    }
 
     this.settingsSaving.set(true);
     this.settingsError.set(null);
     this.settingsSuccess.set(false);
     this.profileApi.updateSettings(this.settingsForm.getRawValue()).subscribe({
-      next: () => {
+      next: (settings) => {
+        // Apply what the server actually stored, not what was typed — the UI
+        // must reflect the persisted state, including a rejected value.
+        this.i18n.applySettings(settings);
         this.settingsSaving.set(false);
         this.settingsSuccess.set(true);
       },
       error: () => {
         this.settingsSaving.set(false);
-        this.settingsError.set("Impossible d'enregistrer les paramètres. Réessaie.");
+        this.settingsError.set('profile.settings.saveError');
       },
     });
   }
@@ -336,9 +365,7 @@ export class Profile {
       error: (err: HttpErrorResponse) => {
         this.deleting.set(false);
         this.deleteError.set(
-          err.status === 403
-            ? 'Mot de passe actuel incorrect.'
-            : 'Impossible de supprimer le compte. Réessaie.',
+          err.status === 403 ? 'profile.danger.wrongPassword' : 'profile.danger.error',
         );
       },
     });

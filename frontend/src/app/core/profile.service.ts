@@ -14,11 +14,16 @@ export interface ChangePasswordInput {
   newPassword: string;
 }
 
+/**
+ * Every field is optional, matching UpdateSettingsDto: the endpoint upserts and
+ * merges, so the language switcher can send `{ locale }` alone without having
+ * to read back and resend the rest of the settings.
+ */
 export interface UpdateSettingsInput {
-  locale: string;
-  timezone: string;
-  weeklyApplicationGoal: number;
-  emailRemindersEnabled: boolean;
+  locale?: string;
+  timezone?: string;
+  weeklyApplicationGoal?: number;
+  emailRemindersEnabled?: boolean;
 }
 
 export interface DeleteAccountInput {

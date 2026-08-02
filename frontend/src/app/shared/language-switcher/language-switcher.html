@@ -1,0 +1,63 @@
+<div class="relative" [class.w-full]="variant() === 'nav'">
+  <button
+    #trigger
+    type="button"
+    (click)="toggle()"
+    [disabled]="saving()"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="t('language.ariaLabel')"
+    [class]="
+      variant() === 'nav'
+        ? 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60'
+        : 'flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60'
+    "
+  >
+    <span class="flex shrink-0 justify-center" [class.w-4]="variant() === 'nav'">
+      <app-flag [locale]="locale()" />
+    </span>
+    <span class="flex-1 truncate text-left">{{ localeNames[locale()] }}</span>
+    <span
+      aria-hidden="true"
+      class="shrink-0 text-[9px] leading-none text-slate-400 transition-transform"
+      [class.rotate-180]="open()"
+      >▼</span
+    >
+  </button>
+
+  @if (open()) {
+    <ul
+      role="listbox"
+      [attr.aria-label]="t('language.label')"
+      (keydown)="onPanelKeydown($event)"
+      [class]="
+        'absolute z-30 min-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg ' +
+        (placement() === 'top-start'
+          ? 'bottom-full left-0 mb-1.5'
+          : placement() === 'bottom-end'
+            ? 'right-0 top-full mt-1.5'
+            : 'left-0 top-full mt-1.5')
+      "
+    >
+      @for (l of locales; track l) {
+        <li>
+          <button
+            type="button"
+            role="option"
+            [attr.aria-selected]="l === locale()"
+            (click)="select(l)"
+            class="flex w-full items-center gap-2.5 whitespace-nowrap px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+            [class.font-semibold]="l === locale()"
+            [class.text-brand-700]="l === locale()"
+          >
+            <app-flag [locale]="l" />
+            <span class="flex-1 text-left">{{ localeNames[l] }}</span>
+            <span class="w-3 shrink-0 text-center text-xs text-brand-600" aria-hidden="true">
+              {{ l === locale() ? '✓' : '' }}
+            </span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

@@ -1,5 +1,10 @@
 import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
+/**
+ * PATCH semantics: an absent key leaves the column untouched, while an
+ * explicit `null` clears it. `@IsOptional()` skips validation for both, so
+ * the nullable types below are what actually reaches Prisma.
+ */
 export class UpdateCompanyDto {
   @IsOptional()
   @IsString()
@@ -9,30 +14,30 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsUrl()
   @MaxLength(2048)
-  website?: string;
+  website?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  industry?: string;
+  industry?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(200)
-  location?: string;
+  location?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  size?: string;
+  size?: string | null;
 
   @IsOptional()
   @IsUrl()
   @MaxLength(2048)
-  logoUrl?: string;
+  logoUrl?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(5000)
-  notes?: string;
+  notes?: string | null;
 }

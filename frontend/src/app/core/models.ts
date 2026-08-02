@@ -9,6 +9,10 @@ export interface User {
   name: string | null;
   avatarUrl: string | null;
   role: Role;
+  /** Mirrors UserSettings so the UI can pick its language on the first paint. */
+  locale: string;
+  /** IANA zone; every timestamp below is UTC and rendered through it. */
+  timezone: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -216,16 +220,13 @@ export interface EmailTemplate {
   updatedAt: string;
 }
 
-// ---- Discover -------------------------------------------------------------
+// ---- Network: companies & contacts ---------------------------------------
+//
+// Every shape below is strictly private to the signed-in user: the API scopes
+// each read and write by userId, and nothing here is shared across accounts.
 
-export interface DiscoverCompanyAggregate {
-  avgRating: number | null;
-  responseRate: number | null; // 0..1, null when reviewCount is 0
-  reviewCount: number;
-}
-
-/** Shape returned by `GET /api/discover` and `GET /api/discover/:id` — safe subset only. */
-export interface DiscoverCompany {
+/** Shape returned by `GET /api/companies` (list include). */
+export interface CompanyListItem {
   id: string;
   name: string;
   website: string | null;
@@ -233,23 +234,52 @@ export interface DiscoverCompany {
   location: string | null;
   size: string | null;
   logoUrl: string | null;
-  aggregate: DiscoverCompanyAggregate;
-}
-
-/** Shape returned by `GET /api/discover/:id/my-review`. */
-export interface MyReviewContext {
-  eligible: boolean;
-  suggestedDidRespond: boolean | null;
-  existingReview: { rating: number; didRespond: boolean } | null;
-}
-
-/** Shape returned by `POST /api/discover/:id/reviews`. */
-export interface CompanyReviewRef {
-  id: string;
-  rating: number;
-  didRespond: boolean;
+  notes: string | null;
   createdAt: string;
   updatedAt: string;
+  _count: { applications: number; contacts: number };
+}
+
+/** Shape returned by `GET /api/companies/:id` (detail include). */
+export interface CompanyDetail extends CompanyListItem {
+  contacts: Contact[];
+  applications: {
+    id: string;
+    position: string;
+    status: ApplicationStatus;
+    appliedAt: string | null;
+    updatedAt: string;
+  }[];
+}
+
+/** The `company` sub-object embedded in contact responses. */
+export interface ContactCompanyRef {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+/** Shape returned by `GET /api/contacts` (list include). */
+export interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  companyId: string | null;
+  company?: ContactCompanyRef | null;
+  email: string | null;
+  phone: string | null;
+  title: string | null;
+  linkedinUrl: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Shape returned by `GET /api/contacts/:id` (detail include). */
+export interface ContactDetail extends Contact {
+  company: ContactCompanyRef | null;
+  interviews: InterviewItem[];
+  _count: { interviews: number; primaryForApplications: number };
 }
 
 // ---- Generic paginated envelope ----------------------------------------

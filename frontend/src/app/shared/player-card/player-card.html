@@ -21,7 +21,9 @@
         <p class="font-display text-xl font-semibold sm:text-2xl">
           {{ greeting() ?? displayName() }}
         </p>
-        <p class="mt-0.5 text-sm text-brand-200">Niveau {{ level() }} · {{ xp() }} XP au total</p>
+        <p class="mt-0.5 text-sm text-brand-200">
+          {{ t('playerCard.levelAndXp', { level: level(), xp: num(xp()) }) }}
+        </p>
       </div>
     </div>
 
@@ -37,7 +39,7 @@
         </div>
         <div>
           <p class="text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-300">
-            Niveau
+            {{ t('playerCard.level') }}
           </p>
           <p class="font-mono text-xs tabular-nums text-brand-200">
             {{ xpIntoLevel() }} / {{ xpForNextLevel() }}
@@ -58,7 +60,7 @@
           ></span>
         </div>
         <p class="mt-2 font-mono text-xs tabular-nums text-brand-200">
-          avant niveau {{ level() + 1 }}
+          {{ t('playerCard.beforeNextLevel', { level: level() + 1 }) }}
         </p>
       </div>
 
@@ -78,29 +80,32 @@
               ></span>
             }
           </div>
-          <p class="text-xs text-brand-200">
-            <span class="font-mono font-semibold text-white">{{ currentStreakDays() }}</span>
-            jour{{ currentStreakDays() === 1 ? '' : 's' }} · record
-            <span class="font-mono">{{ longestStreakDays() }}</span>
+          <p class="font-mono text-xs tabular-nums text-brand-200">
+            {{
+              t('playerCard.streak', {
+                days: currentStreakDays(),
+                record: longestStreakDays(),
+              })
+            }}
           </p>
         </div>
       } @else {
         <div class="flex items-center gap-2.5">
           <span class="text-xl" aria-hidden="true">🔥</span>
-          <p class="text-xs text-brand-200">
-            <span class="font-mono font-semibold text-white">{{ currentStreakDays() }}</span>
-            jour{{ currentStreakDays() === 1 ? '' : 's' }} · record
-            <span class="font-mono">{{ longestStreakDays() }}</span>
+          <p class="font-mono text-xs tabular-nums text-brand-200">
+            {{
+              t('playerCard.streak', {
+                days: currentStreakDays(),
+                record: longestStreakDays(),
+              })
+            }}
           </p>
         </div>
       }
 
       @if (showAchievementsLink()) {
-        <a
-          routerLink="/progression"
-          class="inline-flex items-center gap-1 text-xs font-semibold text-brass-500 transition-colors hover:text-brass-500/80"
-        >
-          Succès <span aria-hidden="true">→</span>
+        <a routerLink="/progression" class="btn btn--brass btn--sm btn--next">
+          {{ t('playerCard.achievements') }}
         </a>
       }
     </div>

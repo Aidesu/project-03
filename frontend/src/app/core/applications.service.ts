@@ -29,6 +29,8 @@ export interface ApplicationsQuery {
 export interface UpdateApplicationInput {
   position?: string;
   companyName?: string | null;
+  /** Omit to let the server resolve the link from `companyName`. */
+  companyId?: string;
   location?: string | null;
   jobUrl?: string | null;
   priority?: Priority;
@@ -50,6 +52,8 @@ export interface UpdateApplicationInput {
 export interface CreateApplicationInput {
   position: string;
   companyName?: string;
+  /** Omit to let the server resolve the link from `companyName`. */
+  companyId?: string;
   location?: string;
   jobUrl?: string;
   status?: ApplicationStatus;

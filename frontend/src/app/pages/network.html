@@ -1,0 +1,283 @@
+<header class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+      {{ t('network.title') }}
+    </h1>
+    <p class="text-slate-500">{{ t('network.subtitle') }}</p>
+  </div>
+
+  @if (tab() === 'companies') {
+    <button
+      (click)="showCompanyForm.set(true)"
+      class="btn btn--primary btn--add"
+    >
+      {{ t('network.newCompany') }}
+    </button>
+  } @else {
+    <button
+      (click)="showContactForm.set(true)"
+      class="btn btn--primary btn--add"
+    >
+      {{ t('network.newContact') }}
+    </button>
+  }
+</header>
+
+<!-- Tabs -->
+<div class="mt-6 flex gap-1 border-b border-slate-200">
+  <button
+    (click)="switchTab('companies')"
+    [class]="
+      tab() === 'companies'
+        ? 'border-b-2 border-brand-600 px-4 py-2.5 text-sm font-semibold text-brand-700'
+        : 'border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700'
+    "
+  >
+    {{ t('network.tabs.companies') }}
+    @if (companies(); as d) {
+      <span class="ml-1.5 text-xs text-slate-400">{{ d.total }}</span>
+    }
+  </button>
+  <button
+    (click)="switchTab('contacts')"
+    [class]="
+      tab() === 'contacts'
+        ? 'border-b-2 border-brand-600 px-4 py-2.5 text-sm font-semibold text-brand-700'
+        : 'border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700'
+    "
+  >
+    {{ t('network.tabs.contacts') }}
+    @if (contacts(); as d) {
+      <span class="ml-1.5 text-xs text-slate-400">{{ d.total }}</span>
+    }
+  </button>
+</div>
+
+<!-- Search -->
+<div class="mt-4 flex flex-wrap items-center gap-3">
+  @if (tab() === 'companies') {
+    <input
+      type="search"
+      [(ngModel)]="companySearch"
+      (keyup.enter)="applySearch()"
+      [placeholder]="t('network.searchCompanies')"
+      class="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+    />
+  } @else {
+    <input
+      type="search"
+      [(ngModel)]="contactSearch"
+      (keyup.enter)="applySearch()"
+      [placeholder]="t('network.searchContacts')"
+      class="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+    />
+  }
+  <button
+    (click)="applySearch()"
+    class="btn btn--secondary"
+  >
+    {{ t('common.search') }}
+  </button>
+
+  @if (rangeLabel()) {
+    <span class="ml-auto text-sm text-slate-400">{{ rangeLabel() }}</span>
+  }
+</div>
+
+@if (loading()) {
+  <div class="mt-6 h-64 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+} @else if (error()) {
+  <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+    {{ t('network.loadError') }}
+  </div>
+} @else if (tab() === 'companies') {
+  <!-- Companies -->
+  @if (companies(); as d) {
+    @if (d.items.length === 0) {
+      <div
+        class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-16 text-center"
+      >
+        <p class="text-sm font-medium text-slate-600">
+          {{ t('network.companies.empty.title') }}
+        </p>
+        <p class="mt-1 text-sm text-slate-400">{{ t('network.companies.empty.body') }}</p>
+        <button
+          (click)="showCompanyForm.set(true)"
+          class="mt-4 btn btn--primary btn--add"
+        >
+          {{ t('network.newCompany') }}
+        </button>
+      </div>
+    } @else {
+      <ul class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        @for (c of d.items; track c.id) {
+          <li
+            class="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-slate-200 hover:shadow-md"
+          >
+            <div class="flex items-start gap-3">
+              <a
+                [routerLink]="['/network/companies', c.id]"
+                class="flex min-w-0 flex-1 items-center gap-3"
+              >
+                <span
+                  class="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-bold"
+                  [class]="avatarColor(c.name)"
+                >
+                  {{ initial(c.name) }}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate font-semibold text-slate-800">{{ c.name }}</p>
+                  <p class="truncate text-sm text-slate-500">
+                    {{ c.industry || t('network.noIndustry') }}
+                    @if (c.location) {
+                      <span class="text-slate-300">•</span> {{ c.location }}
+                    }
+                  </p>
+                </div>
+              </a>
+              <button
+                (click)="removeCompany(c)"
+                [disabled]="deletingId() === c.id"
+                [attr.aria-label]="t('network.deleteCompanyAria')"
+                class="btn btn--icon btn--ghost text-slate-300 hover:bg-rose-50 hover:text-rose-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <a
+              [routerLink]="['/network/companies', c.id]"
+              class="flex items-center gap-4 border-t border-slate-100 pt-3 text-sm text-slate-400"
+            >
+              <span>{{
+                t('network.companyApplications', { count: c._count.applications })
+              }}</span>
+              <span>{{ t('network.companyContacts', { count: c._count.contacts }) }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+
+      @if (d.pageCount > 1) {
+        <div class="mt-6 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            (click)="goTo(d.page - 1)"
+            [disabled]="d.page <= 1"
+            class="btn btn--secondary btn--sm btn--prev"
+          >
+            {{ t('common.previous') }}
+          </button>
+          <span class="text-sm text-slate-500">{{
+            t('common.pageOf', { page: d.page, pageCount: d.pageCount })
+          }}</span>
+          <button
+            type="button"
+            (click)="goTo(d.page + 1)"
+            [disabled]="d.page >= d.pageCount"
+            class="btn btn--secondary btn--sm btn--next"
+          >
+            {{ t('common.next') }}
+          </button>
+        </div>
+      }
+    }
+  }
+} @else {
+  <!-- Contacts -->
+  @if (contacts(); as d) {
+    @if (d.items.length === 0) {
+      <div
+        class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-16 text-center"
+      >
+        <p class="text-sm font-medium text-slate-600">
+          {{ t('network.contacts.empty.title') }}
+        </p>
+        <p class="mt-1 text-sm text-slate-400">{{ t('network.contacts.empty.body') }}</p>
+        <button
+          (click)="showContactForm.set(true)"
+          class="mt-4 btn btn--primary btn--add"
+        >
+          {{ t('network.newContact') }}
+        </button>
+      </div>
+    } @else {
+      <ul class="mt-6 flex flex-col gap-3">
+        @for (c of d.items; track c.id) {
+          <li
+            class="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-slate-200 hover:shadow-md"
+          >
+            <a
+              [routerLink]="['/network/contacts', c.id]"
+              class="flex min-w-0 flex-1 items-center gap-4"
+            >
+              <span
+                class="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-bold"
+                [class]="avatarColor(contactName(c))"
+              >
+                {{ initial(c.firstName) }}
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate font-semibold text-slate-800">{{ contactName(c) }}</p>
+                <p class="truncate text-sm text-slate-500">
+                  {{ c.title || t('network.noRole') }}
+                  @if (c.company) {
+                    <span class="text-slate-300">•</span> {{ c.company.name }}
+                  }
+                </p>
+              </div>
+              <div class="hidden min-w-0 text-right text-sm text-slate-400 sm:block">
+                @if (c.email) {
+                  <p class="truncate">{{ c.email }}</p>
+                }
+                @if (c.phone) {
+                  <p class="truncate">{{ c.phone }}</p>
+                }
+              </div>
+            </a>
+            <button
+              (click)="removeContact(c)"
+              [disabled]="deletingId() === c.id"
+              [attr.aria-label]="t('network.deleteContactAria')"
+              class="btn btn--icon btn--ghost text-slate-300 hover:bg-rose-50 hover:text-rose-600"
+            >
+              ✕
+            </button>
+          </li>
+        }
+      </ul>
+
+      @if (d.pageCount > 1) {
+        <div class="mt-6 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            (click)="goTo(d.page - 1)"
+            [disabled]="d.page <= 1"
+            class="btn btn--secondary btn--sm btn--prev"
+          >
+            {{ t('common.previous') }}
+          </button>
+          <span class="text-sm text-slate-500">{{
+            t('common.pageOf', { page: d.page, pageCount: d.pageCount })
+          }}</span>
+          <button
+            type="button"
+            (click)="goTo(d.page + 1)"
+            [disabled]="d.page >= d.pageCount"
+            class="btn btn--secondary btn--sm btn--next"
+          >
+            {{ t('common.next') }}
+          </button>
+        </div>
+      }
+    }
+  }
+}
+
+@if (showCompanyForm()) {
+  <app-company-form (saved)="onSaved()" (cancelled)="showCompanyForm.set(false)" />
+}
+
+@if (showContactForm()) {
+  <app-contact-form (saved)="onSaved()" (cancelled)="showContactForm.set(false)" />
+}

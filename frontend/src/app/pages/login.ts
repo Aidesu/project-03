@@ -1,25 +1,27 @@
-import { Component, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { I18nService, TranslationKey } from '../core/i18n';
+import { LanguageSwitcher } from '../shared/language-switcher/language-switcher';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, LanguageSwitcher],
   templateUrl: './login.html',
 })
 export class Login {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18nService);
 
+  readonly t = this.i18n.t;
   readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
+  // Errors are held as translation keys, not rendered strings, so a language
+  // switch while the message is on screen re-renders it in the new language.
+  readonly error = signal<TranslationKey | null>(null);
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -44,10 +46,10 @@ export class Login {
     }
   }
 
-  private messageFor(err: unknown): string {
+  private messageFor(err: unknown): TranslationKey {
     if (err instanceof HttpErrorResponse && err.status === 401) {
-      return 'Email ou mot de passe incorrect.';
+      return 'login.invalidCredentials';
     }
-    return 'Connexion impossible. Réessaie dans un instant.';
+    return 'login.error';
   }
 }

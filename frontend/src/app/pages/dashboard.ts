@@ -11,23 +11,24 @@ import {
 import { ApplicationsService } from '../core/applications.service';
 import { AuthService } from '../core/auth.service';
 import { GamificationService } from '../core/gamification.service';
+import { I18nService, TranslationKey } from '../core/i18n';
 import { initialsOf } from '../core/initials';
 import { DailyApplicationStat, GamificationProfile } from '../core/models';
 import { PlayerCard } from '../shared/player-card/player-card';
 
-const XP_REASON_LABEL: Record<string, string> = {
-  APPLICATION_CREATED: 'Candidature ajoutée',
-  APPLICATION_SUBMITTED: 'Candidature envoyée',
-  INTERVIEW_SCHEDULED: 'Entretien planifié',
-  INTERVIEW_COMPLETED: 'Entretien passé',
-  OFFER_RECEIVED: 'Offre reçue',
-  OFFER_ACCEPTED: 'Offre acceptée',
-  STREAK_BONUS: 'Bonus de série',
-  DAILY_GOAL: 'Objectif quotidien',
-  WEEKLY_GOAL: 'Objectif hebdomadaire',
-  ACHIEVEMENT_UNLOCKED: 'Succès débloqué',
-  OTHER: 'Activité',
-};
+const XP_REASON_KEYS = {
+  APPLICATION_CREATED: 'xp.reason.APPLICATION_CREATED',
+  APPLICATION_SUBMITTED: 'xp.reason.APPLICATION_SUBMITTED',
+  INTERVIEW_SCHEDULED: 'xp.reason.INTERVIEW_SCHEDULED',
+  INTERVIEW_COMPLETED: 'xp.reason.INTERVIEW_COMPLETED',
+  OFFER_RECEIVED: 'xp.reason.OFFER_RECEIVED',
+  OFFER_ACCEPTED: 'xp.reason.OFFER_ACCEPTED',
+  STREAK_BONUS: 'xp.reason.STREAK_BONUS',
+  DAILY_GOAL: 'xp.reason.DAILY_GOAL',
+  WEEKLY_GOAL: 'xp.reason.WEEKLY_GOAL',
+  ACHIEVEMENT_UNLOCKED: 'xp.reason.ACHIEVEMENT_UNLOCKED',
+  OTHER: 'xp.reason.OTHER',
+} satisfies Record<string, TranslationKey>;
 
 // A small accent dot per reason — identity without a legend, in the ledger feed.
 const XP_REASON_ACCENT: Record<string, string> = {
@@ -61,10 +62,10 @@ function heatLevel(count: number): number {
 }
 
 interface HeatCell {
+  /** Calendar day, `YYYY-MM-DD` in UTC. Localized at render time, not here. */
   date: string;
   count: number;
   level: number;
-  label: string;
 }
 
 /** Groups a run of days (oldest first) into Monday-start week columns, padding the first week. */
@@ -79,11 +80,6 @@ function buildHeatmapWeeks(stats: DailyApplicationStat[]): (HeatCell | null)[][]
       date: s.date,
       count: s.count,
       level: heatLevel(s.count),
-      label: new Date(`${s.date}T00:00:00Z`).toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      }),
     })),
   ];
 
@@ -113,8 +109,8 @@ function niceMax(max: number): number {
 }
 
 interface ChartPoint {
-  label: string;
-  fullLabel: string;
+  /** Calendar day the bar covers, `YYYY-MM-DD` in UTC. */
+  date: string;
   count: number;
   x: number;
   width: number;
@@ -132,6 +128,11 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   private readonly gamification = inject(GamificationService);
   private readonly applications = inject(ApplicationsService);
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(I18nService);
+
+  readonly t = this.i18n.t;
+  readonly calendarWeekdayShort = this.i18n.calendarWeekdayShort;
+  readonly calendarFull = this.i18n.calendarFull;
 
   @ViewChild('chartWrap') private chartWrapRef?: ElementRef<HTMLDivElement>;
   private resizeObserver?: ResizeObserver;
@@ -170,7 +171,9 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     return base.split(/[@\s]/)[0];
   });
 
-  readonly greeting = computed(() => `Salut ${this.firstName()} 👋`);
+  readonly greeting = computed(() =>
+    this.t('dashboard.greeting', { name: this.firstName() }),
+  );
 
   readonly displayName = computed(() => this.user()?.name?.trim() || this.user()?.email || '');
 
@@ -199,12 +202,19 @@ export class Dashboard implements AfterViewInit, OnDestroy {
         continue;
       }
       lastMonth = month;
-      labels.push(new Date(`${firstCell.date}T00:00:00Z`).toLocaleDateString('fr-FR', { month: 'short' }));
+      labels.push(this.i18n.calendarMonthShort(firstCell.date));
     }
     return labels;
   });
 
-  readonly heatmapDayLabels = ['Lun', '', 'Mer', '', 'Ven', '', ''];
+  /**
+   * Row labels for the heatmap: Monday/Wednesday/Friday only, the rest blank —
+   * the grid is 4px-tall rows, so labelling every day is unreadable.
+   */
+  readonly heatmapDayLabels = computed(() => {
+    const names = this.i18n.weekdayNames('short');
+    return names.map((name, i) => (i % 2 === 0 && i < 5 ? name : ''));
+  });
 
   private readonly axisMax = computed(() => {
     return niceMax(Math.max(0, ...this.chartStats().map((d) => d.count)));
@@ -230,14 +240,8 @@ export class Dashboard implements AfterViewInit, OnDestroy {
       const rawHeight = (d.count / max) * PLOT_HEIGHT;
       const height = d.count > 0 ? Math.max(MIN_BAR_HEIGHT, rawHeight) : 0;
       const x = PAD_LEFT + i * band + (band - barWidth) / 2;
-      const date = new Date(d.date);
       return {
-        label: date.toLocaleDateString('fr-FR', { weekday: 'short' }),
-        fullLabel: date.toLocaleDateString('fr-FR', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        }),
+        date: d.date,
         count: d.count,
         x,
         width: barWidth,
@@ -296,7 +300,10 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   }
 
   reasonLabel(reason: string): string {
-    return XP_REASON_LABEL[reason] ?? reason;
+    const key = XP_REASON_KEYS[reason as keyof typeof XP_REASON_KEYS];
+    // An XP reason the server added after this build shipped: show the raw
+    // code rather than a blank row.
+    return key ? this.t(key) : reason;
   }
 
   reasonAccent(reason: string): string {
@@ -308,7 +315,17 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   }
 
   heatCellTitle(cell: HeatCell): string {
-    return `${cell.count} candidature${cell.count === 1 ? '' : 's'} — ${cell.label}`;
+    return this.t('dashboard.heatmap.cell', {
+      count: cell.count,
+      date: this.calendarFull(cell.date),
+    });
+  }
+
+  chartPointTitle(point: ChartPoint): string {
+    return this.t('dashboard.chart.point', {
+      count: point.count,
+      date: this.calendarFull(point.date),
+    });
   }
 
   /** Clamped so the tooltip never overflows the chart's left/right edge. */
@@ -318,9 +335,9 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     return Math.min(max, Math.max(min, point.centerX - this.tooltipWidth / 2));
   }
 
+  /** Signed delta, locale-formatted (the minus sign differs between locales). */
   formatDelta(delta: number): string {
-    if (delta > 0) return `+${delta}`;
-    if (delta < 0) return `${delta}`;
-    return '±0';
+    if (delta === 0) return '±0';
+    return this.i18n.number(delta, { signDisplay: 'exceptZero' });
   }
 }

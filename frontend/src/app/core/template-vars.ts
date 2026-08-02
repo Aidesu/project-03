@@ -2,6 +2,8 @@
 // HTML — templates are copied straight into the user's mail client, and
 // keeping everything as text means there is no rendering/XSS surface here.
 
+import { TranslationKey } from './i18n';
+
 export interface TemplateVars {
   poste?: string | null;
   entreprise?: string | null;
@@ -10,13 +12,18 @@ export interface TemplateVars {
   mon_nom?: string | null;
 }
 
-export const TEMPLATE_VARIABLE_HINTS: { token: string; description: string }[] = [
-  { token: '{{poste}}', description: 'Intitulé du poste' },
-  { token: '{{entreprise}}', description: "Nom de l'entreprise" },
-  { token: '{{contact_prenom}}', description: 'Prénom du contact' },
-  { token: '{{contact_nom}}', description: 'Nom du contact' },
-  { token: '{{mon_nom}}', description: 'Ton nom' },
-];
+/**
+ * The `{{token}}` names are user-content syntax stored in saved templates —
+ * translating them would break every template already written, so only the
+ * description is localized.
+ */
+export const TEMPLATE_VARIABLE_HINTS = [
+  { token: '{{poste}}', descriptionKey: 'templateVar.poste' },
+  { token: '{{entreprise}}', descriptionKey: 'templateVar.entreprise' },
+  { token: '{{contact_prenom}}', descriptionKey: 'templateVar.contact_prenom' },
+  { token: '{{contact_nom}}', descriptionKey: 'templateVar.contact_nom' },
+  { token: '{{mon_nom}}', descriptionKey: 'templateVar.mon_nom' },
+] satisfies { token: string; descriptionKey: TranslationKey }[];
 
 const KNOWN_KEYS = new Set<keyof TemplateVars>([
   'poste',

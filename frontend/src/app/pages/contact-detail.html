@@ -1,0 +1,163 @@
+<div class="mx-auto max-w-4xl">
+  <a
+    routerLink="/network"
+    [queryParams]="{ tab: 'contacts' }"
+    class="btn btn--secondary btn--sm btn--back"
+    >{{ t('contactDetail.back') }}</a
+  >
+
+  @if (loading()) {
+    <div class="mt-4 h-64 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+  } @else if (error()) {
+    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+      {{ t('contactDetail.notFound') }}
+    </div>
+  } @else if (detail(); as d) {
+    <header class="mt-3 flex flex-wrap items-start justify-between gap-4">
+      <div class="flex min-w-0 items-center gap-4">
+        <span
+          class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-lg font-bold"
+          [class]="avatarColor(fullName)"
+        >
+          {{ initial(d.firstName) }}
+        </span>
+        <div class="min-w-0">
+          <h1 class="truncate text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+            {{ fullName }}
+          </h1>
+          <p class="mt-1 truncate text-slate-500">
+            {{ d.title || t('network.noRole') }}
+            @if (d.company) {
+              <span class="text-slate-300">•</span>&ngsp;<a
+                [routerLink]="['/network/companies', d.company.id]"
+                class="font-medium text-brand-600 hover:text-brand-700"
+                >{{ d.company.name }}</a
+              >
+            }
+          </p>
+        </div>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-3">
+        <button
+          (click)="showEditForm.set(true)"
+          class="btn btn--secondary btn--sm"
+        >
+          {{ t('common.edit') }}
+        </button>
+        <button
+          (click)="remove()"
+          [disabled]="deleting()"
+          class="btn btn--danger btn--sm"
+        >
+          {{ t('common.delete') }}
+        </button>
+      </div>
+    </header>
+
+    <!-- Coordinates -->
+    <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        {{ t('contactDetail.contactInfo') }}
+      </h2>
+      <dl class="mt-3 grid gap-4 sm:grid-cols-2">
+        <div>
+          <dt class="text-xs font-medium text-slate-400">{{ t('contactDetail.email') }}</dt>
+          <dd class="mt-0.5 text-sm text-slate-700">
+            @if (d.email) {
+              <a [href]="'mailto:' + d.email" class="text-brand-600 hover:text-brand-700">{{
+                d.email
+              }}</a>
+            } @else {
+              <span class="text-slate-300">—</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium text-slate-400">{{ t('contactDetail.phone') }}</dt>
+          <dd class="mt-0.5 text-sm text-slate-700">
+            @if (d.phone) {
+              <a [href]="'tel:' + d.phone" class="text-brand-600 hover:text-brand-700">{{
+                d.phone
+              }}</a>
+            } @else {
+              <span class="text-slate-300">—</span>
+            }
+          </dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-xs font-medium text-slate-400">{{ t('contactDetail.linkedin') }}</dt>
+          <dd class="mt-0.5 text-sm text-slate-700">
+            @if (linkedinHref(d.linkedinUrl); as href) {
+              <a
+                [href]="href"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-external text-sm"
+                >{{ linkedinLabel(d.linkedinUrl) }}</a
+              >
+            } @else {
+              <span class="text-slate-300">—</span>
+            }
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    @if (d.notes) {
+      <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+          {{ t('contactDetail.notes.title') }}
+        </h2>
+        <p class="mt-2 whitespace-pre-wrap text-sm text-slate-600">{{ d.notes }}</p>
+      </section>
+    }
+
+    <!-- Interviews -->
+    <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        {{ t('contactDetail.interviews.title', { count: d._count.interviews }) }}
+      </h2>
+
+      @if (d.interviews.length === 0) {
+        <p class="mt-3 text-sm text-slate-400">{{ t('contactDetail.interviews.empty') }}</p>
+      } @else {
+        <ul class="mt-3 flex flex-col divide-y divide-slate-100">
+          @for (i of d.interviews; track i.id) {
+            <li class="flex items-center justify-between gap-3 py-3">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-slate-800">
+                  {{ interviewTypeLabel(i.type) }}
+                </p>
+                <p class="text-xs text-slate-400">
+                  @if (i.scheduledAt) {
+                    {{ dateTime(i.scheduledAt) }}
+                  } @else {
+                    {{ t('contactDetail.dateTbd') }}
+                  }
+                </p>
+              </div>
+              <span class="shrink-0 text-xs font-medium text-slate-500">
+                {{ interviewOutcomeLabel(i.outcome) }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (d._count.primaryForApplications > 0) {
+      <p class="mt-4 text-sm text-slate-400">
+        {{ t('contactDetail.primaryFor', { count: d._count.primaryForApplications }) }}
+      </p>
+    }
+
+    @if (showEditForm()) {
+      <app-contact-form
+        [contact]="d"
+        (saved)="onSaved()"
+        (cancelled)="showEditForm.set(false)"
+      />
+    }
+  }
+</div>

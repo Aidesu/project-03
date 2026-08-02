@@ -1,9 +1,11 @@
 <header class="flex flex-col gap-1">
-  <p class="text-xs font-semibold uppercase tracking-wider text-brand-600">Progression</p>
+  <p class="text-xs font-semibold uppercase tracking-wider text-brand-600">
+    {{ t('progression.overline') }}
+  </p>
   <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
-    Ta quête, en un coup d'œil
+    {{ t('progression.title') }}
   </h1>
-  <p class="text-slate-500">Niveaux, séries et succès débloqués en cherchant.</p>
+  <p class="text-slate-500">{{ t('progression.subtitle') }}</p>
 </header>
 
 @if (loading()) {
@@ -11,7 +13,7 @@
   <div class="mt-6 h-64 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
 } @else if (error()) {
   <div class="mt-8 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
-    Impossible de charger ta progression pour l'instant.
+    {{ t('progression.loadError') }}
   </div>
 } @else if (profile(); as p) {
   <!-- The player card -->
@@ -33,9 +35,16 @@
   <!-- Achievements -->
   <section class="mt-8">
     <div class="flex items-baseline justify-between">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Succès</h2>
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        {{ t('progression.achievements.title') }}
+      </h2>
       <p class="text-sm font-medium text-slate-400">
-        {{ unlockedCount() }} / {{ totalCount() }} débloqués
+        {{
+          t('progression.achievements.count', {
+            unlocked: unlockedCount(),
+            total: totalCount(),
+          })
+        }}
       </p>
     </div>
 
@@ -43,7 +52,7 @@
       @for (group of groups(); track group.category) {
         <div>
           <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {{ group.category }}
+            {{ group.categoryLabel }}
           </h3>
           <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             @for (a of group.achievements; track a.id) {
@@ -51,8 +60,15 @@
                 class="medal flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm"
                 [attr.aria-label]="
                   a.unlockedAt
-                    ? 'Succès débloqué : ' + a.name + ', obtenu le ' + formatDate(a.unlockedAt)
-                    : 'Succès verrouillé : ' + a.name + ', ' + a.progress + ' sur ' + a.threshold
+                    ? t('progression.achievement.unlockedAria', {
+                        name: a.displayName,
+                        date: dateLong(a.unlockedAt),
+                      })
+                    : t('progression.achievement.lockedAria', {
+                        name: a.displayName,
+                        progress: a.progress,
+                        threshold: a.threshold,
+                      })
                 "
               >
                 <div class="relative h-20 w-20 shrink-0">
@@ -80,14 +96,16 @@
                     [class.text-slate-900]="a.unlockedAt"
                     [class.text-slate-400]="!a.unlockedAt"
                   >
-                    {{ a.name }}
+                    {{ a.displayName }}
                   </p>
-                  <p class="mt-0.5 line-clamp-2 text-xs text-slate-400">{{ a.description }}</p>
+                  <p class="mt-0.5 line-clamp-2 text-xs text-slate-400">
+                    {{ a.displayDescription }}
+                  </p>
                 </div>
 
                 @if (a.unlockedAt) {
                   <p class="text-xs font-medium text-emerald-600">
-                    Débloqué le {{ formatDate(a.unlockedAt) }}
+                    {{ t('progression.unlockedOn', { date: dateLong(a.unlockedAt) }) }}
                   </p>
                 } @else {
                   <div class="w-full">

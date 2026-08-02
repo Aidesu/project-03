@@ -21,19 +21,22 @@
             class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
           >
             <span class="w-4 text-center text-base">{{ item.icon }}</span>
-            {{ item.label }}
+            {{ t(item.labelKey) }}
           </a>
         }
       </nav>
     </div>
 
     <div class="flex flex-col gap-3 border-t border-slate-100 pt-4">
+      <!-- Same padding grid as the nav rows above, so the flag column lines up
+           with their icon column. Opens upward: it sits at the viewport floor. -->
+      <app-language-switcher variant="nav" placement="top-start" />
       <button
         (click)="logout()"
         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-rose-500"
       >
         <span class="w-4 text-center text-base">⎋</span>
-        Se déconnecter
+        {{ t('shell.logout') }}
       </button>
       <a
         routerLink="/profile"
@@ -42,7 +45,7 @@
         @if (avatarUrl(); as url) {
           <img
             [src]="url"
-            alt="Photo de profil"
+            [alt]="t('shell.avatarAlt')"
             class="h-9 w-9 shrink-0 rounded-full object-cover"
           />
         } @else {
@@ -53,7 +56,7 @@
         }
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm font-semibold text-slate-800">{{ displayName() }}</p>
-          <span class="text-xs font-medium text-slate-400">Voir le profil</span>
+          <span class="text-xs font-medium text-slate-400">{{ t('shell.viewProfile') }}</span>
         </div>
       </a>
     </div>
@@ -76,13 +79,16 @@
           [routerLink]="item.path"
           routerLinkActive="bg-brand-50 text-brand-700"
           [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+          [attr.aria-label]="t(item.labelKey)"
           class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600"
           >{{ item.icon }}</a
         >
       }
+      <app-language-switcher placement="bottom-end" />
       <button
         (click)="logout()"
-        class="ml-1 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-400 hover:text-rose-500"
+        [attr.aria-label]="t('shell.logout')"
+        class="btn btn--icon btn--ghost ml-1 h-8 w-8 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
       >
         ⎋
       </button>

@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { paginated, skipTake } from '../common/pagination';
-import { DirectoryLinkingService } from '../discover/directory-linking.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { QueryCompaniesDto } from './dto/query-companies.dto';
@@ -9,29 +8,26 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 
 const COMPANY_DETAIL_INCLUDE = {
   contacts: { orderBy: { firstName: 'asc' } },
+  // Safe to include unfiltered: findOne() only ever returns a company already
+  // proven to belong to the caller, and applications inherit that ownership.
+  applications: {
+    orderBy: { updatedAt: 'desc' },
+    select: {
+      id: true,
+      position: true,
+      status: true,
+      appliedAt: true,
+      updatedAt: true,
+    },
+  },
   _count: { select: { applications: true, contacts: true } },
 } satisfies Prisma.CompanyInclude;
 
 @Injectable()
 export class CompaniesService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly directoryLinking: DirectoryLinkingService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: number, dto: CreateCompanyDto) {
-    // Auto-aggregation: every new private Company opportunistically links
-    // to (or creates) the shared Discover directory entry, using only the
-    // safe field subset — never `notes`.
-    const directoryCompanyId = await this.directoryLinking.linkToDirectory({
-      name: dto.name,
-      website: dto.website ?? null,
-      industry: dto.industry ?? null,
-      location: dto.location ?? null,
-      size: dto.size ?? null,
-      logoUrl: dto.logoUrl ?? null,
-    });
-
     return this.prisma.company.create({
       data: {
         userId,
@@ -42,7 +38,6 @@ export class CompaniesService {
         size: dto.size ?? null,
         logoUrl: dto.logoUrl ?? null,
         notes: dto.notes ?? null,
-        directoryCompanyId,
       },
     });
   }
@@ -80,26 +75,7 @@ export class CompaniesService {
   }
 
   async update(userId: number, id: string, dto: UpdateCompanyDto) {
-    const current = await this.findOwnedOrThrow(userId, id);
-
-    // Re-link on any identity change, or lazily backfill rows created
-    // before this feature shipped (directoryCompanyId still null) on their
-    // next edit, whatever field that edit touches.
-    const identityChanged = dto.name !== undefined || dto.website !== undefined;
-    const directoryCompanyId =
-      identityChanged || current.directoryCompanyId === null
-        ? await this.directoryLinking.linkToDirectory({
-            name: dto.name ?? current.name,
-            website: dto.website !== undefined ? dto.website : current.website,
-            industry:
-              dto.industry !== undefined ? dto.industry : current.industry,
-            location:
-              dto.location !== undefined ? dto.location : current.location,
-            size: dto.size !== undefined ? dto.size : current.size,
-            logoUrl: dto.logoUrl !== undefined ? dto.logoUrl : current.logoUrl,
-          })
-        : undefined;
-
+    await this.findOwnedOrThrow(userId, id);
     return this.prisma.company.update({
       where: { id },
       data: {
@@ -110,7 +86,6 @@ export class CompaniesService {
         size: dto.size,
         logoUrl: dto.logoUrl,
         notes: dto.notes,
-        directoryCompanyId,
       },
     });
   }

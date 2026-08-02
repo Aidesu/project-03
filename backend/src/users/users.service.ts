@@ -21,9 +21,29 @@ const AVATAR_MAX_DIMENSION = 512;
 const AVATAR_PRESIGN_TTL_SECONDS = 300;
 
 /**
+ * Mirrors the `UserSettings` column defaults in schema.prisma. Used when a user
+ * has no settings row yet, so every auth response can carry a locale without
+ * writing a row on a read path.
+ */
+const DEFAULT_PRESENTATION: UserPresentation = {
+  locale: 'fr',
+  timezone: 'Europe/Paris',
+};
+
+/** The presentation preferences the client needs before it can render anything. */
+export interface UserPresentation {
+  locale: string;
+  timezone: string;
+}
+
+/**
  * A user safe to expose over the API. `id` is deliberately the opaque
  * `publicId`, never the sequential primary key — that one stays internal, so
  * a client can neither count accounts nor guess a neighbour's identifier.
+ *
+ * `locale`/`timezone` are duplicated from UserSettings on purpose: the UI needs
+ * the language on the very first paint, and a second round trip to /settings
+ * would show a flash of the wrong language on every load.
  */
 export type SafeUser = Omit<
   User,
@@ -31,7 +51,7 @@ export type SafeUser = Omit<
 > & {
   id: string;
   avatarUrl: string | null;
-};
+} & UserPresentation;
 
 /**
  * Build the client-safe view of a user. Uses an explicit allowlist (not an
@@ -40,6 +60,7 @@ export type SafeUser = Omit<
 export function toSafeUser(
   user: User,
   avatarUrl: string | null = null,
+  presentation: UserPresentation = DEFAULT_PRESENTATION,
 ): SafeUser {
   return {
     id: user.publicId,
@@ -49,6 +70,8 @@ export function toSafeUser(
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     avatarUrl,
+    locale: presentation.locale,
+    timezone: presentation.timezone,
   };
 }
 
@@ -95,15 +118,26 @@ export class UsersService {
     return this.prisma.user.create({ data });
   }
 
-  /** The single place `SafeUser` views are assembled — resolves the avatar's presigned URL. */
+  /**
+   * The single place `SafeUser` views are assembled — resolves the avatar's
+   * presigned URL and the user's display preferences. A missing settings row
+   * falls back to the schema defaults rather than being created here: this runs
+   * on read paths (/auth/me, /auth/refresh) that must not write.
+   */
   async presentUser(user: User): Promise<SafeUser> {
-    const avatarUrl = user.avatarStorageKey
-      ? await this.storage.presignGet(
-          user.avatarStorageKey,
-          AVATAR_PRESIGN_TTL_SECONDS,
-        )
-      : null;
-    return toSafeUser(user, avatarUrl);
+    const [avatarUrl, settings] = await Promise.all([
+      user.avatarStorageKey
+        ? this.storage.presignGet(
+            user.avatarStorageKey,
+            AVATAR_PRESIGN_TTL_SECONDS,
+          )
+        : Promise.resolve(null),
+      this.prisma.userSettings.findUnique({
+        where: { userId: user.id },
+        select: { locale: true, timezone: true },
+      }),
+    ]);
+    return toSafeUser(user, avatarUrl, settings ?? DEFAULT_PRESENTATION);
   }
 
   /**

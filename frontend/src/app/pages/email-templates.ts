@@ -1,7 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmailTemplateInput, EmailTemplatesService } from '../core/email-templates.service';
-import { EMAIL_TEMPLATE_CATEGORY_OPTIONS } from '../core/enums';
+import { EMAIL_TEMPLATE_CATEGORY_KEYS, optionsFrom } from '../core/enums';
+import { I18nService, TranslationKey } from '../core/i18n';
 import { EmailTemplate, EmailTemplateCategory } from '../core/models';
 import { TEMPLATE_VARIABLE_HINTS } from '../core/template-vars';
 
@@ -13,30 +14,45 @@ import { TEMPLATE_VARIABLE_HINTS } from '../core/template-vars';
 export class EmailTemplates {
   private readonly fb = inject(FormBuilder);
   private readonly templatesApi = inject(EmailTemplatesService);
+  private readonly i18n = inject(I18nService);
 
-  readonly categoryOptions = EMAIL_TEMPLATE_CATEGORY_OPTIONS;
+  readonly t = this.i18n.t;
+  readonly categoryOptions = computed(() =>
+    optionsFrom(EMAIL_TEMPLATE_CATEGORY_KEYS, this.t),
+  );
   readonly variableHints = TEMPLATE_VARIABLE_HINTS;
 
-  // Kept as plain TS strings (not inline template text) so the literal
-  // `{{ }}` placeholders aren't parsed as Angular interpolation.
-  readonly subjectPlaceholder = 'Suite à notre échange — {{poste}} chez {{entreprise}}';
-  readonly bodyPlaceholder = 'Bonjour {{contact_prenom}},\n\n';
+  // The `{{token}}` names are user-content syntax, so they are injected as ICU
+  // arguments rather than written into the catalogue — a translator can move
+  // them around the sentence but cannot rename or break them.
+  private readonly tokenArgs = {
+    poste: '{{poste}}',
+    entreprise: '{{entreprise}}',
+    contact_prenom: '{{contact_prenom}}',
+  };
+
+  readonly subjectPlaceholder = computed(() =>
+    this.t('emailTemplates.form.subjectPlaceholder', this.tokenArgs),
+  );
+  readonly bodyPlaceholder = computed(
+    () => `${this.t('emailTemplates.form.bodyPlaceholder', this.tokenArgs)}\n\n`,
+  );
 
   readonly templates = signal<EmailTemplate[]>([]);
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly saving = signal(false);
-  readonly formError = signal<string | null>(null);
+  readonly formError = signal<TranslationKey | null>(null);
   readonly deletingId = signal<string | null>(null);
   readonly copiedId = signal<string | null>(null);
-  readonly copyError = signal<string | null>(null);
+  readonly copyError = signal<TranslationKey | null>(null);
   readonly showForm = signal(false);
 
   editingId: string | null = null;
 
   readonly grouped = computed(() => {
     const items = this.templates();
-    return this.categoryOptions
+    return this.categoryOptions()
       .map((opt) => ({
         category: opt.value,
         label: opt.label,
@@ -125,14 +141,14 @@ export class EmailTemplates {
       },
       error: () => {
         this.saving.set(false);
-        this.formError.set('Impossible d’enregistrer le modèle. Réessaie.');
+        this.formError.set('emailTemplates.saveError');
       },
     });
   }
 
   remove(t: EmailTemplate): void {
     if (this.deletingId()) return;
-    if (!confirm(`Supprimer le modèle « ${t.name} » ?`)) return;
+    if (!confirm(this.t('emailTemplates.confirmDelete', { name: t.name }))) return;
     this.deletingId.set(t.id);
     this.templatesApi.remove(t.id).subscribe({
       next: () => {
@@ -143,19 +159,18 @@ export class EmailTemplates {
     });
   }
 
-  /** Copies "Objet + corps" as one block — plain text, so nothing to sanitize. */
+  /** Copies "subject + body" as one block — plain text, so nothing to sanitize. */
   async copy(t: EmailTemplate): Promise<void> {
     this.copyError.set(null);
-    const text = `Objet : ${t.subject}\n\n${t.body}`;
+    const subjectLine = this.t('common.emailSubjectPrefix', { subject: t.subject });
+    const text = `${subjectLine}\n\n${t.body}`;
     try {
       await navigator.clipboard.writeText(text);
       this.copiedId.set(t.id);
       if (this.copyResetHandle) clearTimeout(this.copyResetHandle);
       this.copyResetHandle = setTimeout(() => this.copiedId.set(null), 2000);
     } catch {
-      this.copyError.set(
-        'Impossible de copier automatiquement — sélectionne le texte manuellement.',
-      );
+      this.copyError.set('emailTemplates.copyError');
     }
   }
 }

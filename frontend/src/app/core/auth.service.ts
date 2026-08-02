@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { ApplicationDefaultsService } from './application-defaults.service';
+import { I18nService } from './i18n';
 import { User } from './models';
 
 interface AuthResponse {
@@ -24,6 +26,8 @@ export interface RegisterInput {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly i18n = inject(I18nService);
+  private readonly applicationDefaults = inject(ApplicationDefaultsService);
   private readonly base = '/api/auth';
 
   private readonly _user = signal<User | null>(null);
@@ -47,7 +51,7 @@ export class AuthService {
       const { user } = await firstValueFrom(
         this.http.get<AuthResponse>(`${this.base}/me`),
       );
-      this._user.set(user);
+      this.adoptUser(user);
     } catch {
       this._user.set(null);
     }
@@ -75,7 +79,18 @@ export class AuthService {
 
   /** Syncs the local user signal after a profile mutation, without a full `/auth/me` refetch. */
   updateUser(user: User): void {
+    this.adoptUser(user);
+  }
+
+  /**
+   * Single entry point for "a session now belongs to this user": stores them
+   * and switches the UI to their language and time zone. Every response that
+   * carries a user goes through here, so a preference changed on another device
+   * takes effect on the next refresh.
+   */
+  private adoptUser(user: User): void {
     this._user.set(user);
+    this.i18n.applySettings(user);
   }
 
   private async performRefresh(): Promise<boolean> {
@@ -83,7 +98,7 @@ export class AuthService {
       const { user } = await firstValueFrom(
         this.http.post<AuthResponse>(`${this.base}/refresh`, {}),
       );
-      this._user.set(user);
+      this.adoptUser(user);
       return true;
     } catch {
       this._user.set(null);
@@ -95,7 +110,7 @@ export class AuthService {
     const { user } = await firstValueFrom(
       this.http.post<AuthResponse>(`${this.base}/login`, { email, password }),
     );
-    this._user.set(user);
+    this.adoptUser(user);
     return user;
   }
 
@@ -103,7 +118,7 @@ export class AuthService {
     const { user } = await firstValueFrom(
       this.http.post<AuthResponse>(`${this.base}/register`, input),
     );
-    this._user.set(user);
+    this.adoptUser(user);
     return user;
   }
 
@@ -112,6 +127,12 @@ export class AuthService {
       await firstValueFrom(this.http.post(`${this.base}/logout`, {}));
     } finally {
       this._user.set(null);
+      // Drop the departing user's zone; their chosen language is kept so the
+      // login screen stays in the language they were just reading.
+      this.i18n.reset();
+      // Form defaults describe how *that* user applies to jobs. On a shared
+      // machine the next person must not inherit them.
+      this.applicationDefaults.clear();
     }
   }
 

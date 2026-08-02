@@ -107,7 +107,8 @@ export class ContactsService {
   }
 
   /** Ensure a linked company belongs to the same user (prevents cross-user linking). */
-  private async assertCompany(userId: number, companyId?: string) {
+  private async assertCompany(userId: number, companyId?: string | null) {
+    // null/absent means "no company" or "unlink" — nothing to authorize.
     if (!companyId) return;
     const found = await this.prisma.company.count({
       where: { id: companyId, userId },

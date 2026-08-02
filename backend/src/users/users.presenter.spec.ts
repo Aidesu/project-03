@@ -49,10 +49,26 @@ describe('toSafeUser', () => {
       'createdAt',
       'email',
       'id',
+      'locale',
       'name',
       'role',
+      'timezone',
       'updatedAt',
     ]);
+  });
+
+  it('carries the display preferences so the UI can pick a language at once', () => {
+    const safe = toSafeUser(user, null, { locale: 'de', timezone: 'Europe/Berlin' });
+    expect(safe.locale).toBe('de');
+    expect(safe.timezone).toBe('Europe/Berlin');
+  });
+
+  // A user who never opened the settings page has no UserSettings row; the
+  // presenter must still answer with a usable locale instead of undefined.
+  it('falls back to the schema defaults when no settings row exists', () => {
+    const safe = toSafeUser(user);
+    expect(safe.locale).toBe('fr');
+    expect(safe.timezone).toBe('Europe/Paris');
   });
 });
 

@@ -1,0 +1,193 @@
+<div class="mx-auto max-w-4xl">
+  <a routerLink="/network" class="btn btn--secondary btn--sm btn--back">{{
+    t('companyDetail.back')
+  }}</a>
+
+  @if (loading()) {
+    <div class="mt-4 h-64 animate-pulse rounded-2xl border border-slate-100 bg-white"></div>
+  } @else if (error()) {
+    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+      {{ t('companyDetail.notFound') }}
+    </div>
+  } @else if (detail(); as d) {
+    <!-- Header -->
+    <header class="mt-3 flex flex-wrap items-start justify-between gap-4">
+      <div class="flex min-w-0 items-center gap-4">
+        <span
+          class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-lg font-bold"
+          [class]="avatarColor(d.name)"
+        >
+          {{ initial(d.name) }}
+        </span>
+        <div class="min-w-0">
+          <h1 class="truncate text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+            {{ d.name }}
+          </h1>
+          <p class="mt-1 truncate text-slate-500">
+            {{ d.industry || t('network.noIndustry') }}
+            @if (d.location) {
+              <span class="text-slate-300">•</span> {{ d.location }}
+            }
+            @if (sizeLabel(d.size); as size) {
+              <span class="text-slate-300">•</span>
+              {{ t('companyDetail.headcount', { size: size }) }}
+            }
+          </p>
+        </div>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-3">
+        <button
+          (click)="showEditForm.set(true)"
+          class="btn btn--secondary btn--sm"
+        >
+          {{ t('common.edit') }}
+        </button>
+        <button
+          (click)="remove()"
+          [disabled]="deleting()"
+          class="btn btn--danger btn--sm"
+        >
+          {{ t('common.delete') }}
+        </button>
+      </div>
+    </header>
+
+    @if (websiteHref(d.website); as href) {
+      <p class="mt-3">
+        <a
+          [href]="href"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link-external text-sm"
+          >{{ websiteLabel(d.website) }}</a
+        >
+      </p>
+    }
+
+    <!-- Private notes -->
+    @if (d.notes) {
+      <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+          {{ t('companyDetail.notes.title') }}
+        </h2>
+        <p class="mt-2 whitespace-pre-wrap text-sm text-slate-600">{{ d.notes }}</p>
+      </section>
+    }
+
+    <!-- Contacts -->
+    <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+          {{ t('companyDetail.contacts.title', { count: d.contacts.length }) }}
+        </h2>
+        <button
+          (click)="openNewContact()"
+          class="btn btn--secondary btn--sm btn--add"
+        >
+          {{ t('companyDetail.contacts.add') }}
+        </button>
+      </div>
+
+      @if (d.contacts.length === 0) {
+        <p class="mt-3 text-sm text-slate-400">{{ t('companyDetail.contacts.empty') }}</p>
+      } @else {
+        <ul class="mt-3 flex flex-col divide-y divide-slate-100">
+          @for (c of d.contacts; track c.id) {
+            <li class="flex items-center gap-3 py-3">
+              <a
+                [routerLink]="['/network/contacts', c.id]"
+                class="flex min-w-0 flex-1 items-center gap-3"
+              >
+                <span
+                  class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-bold"
+                  [class]="avatarColor(contactName(c))"
+                >
+                  {{ initial(c.firstName) }}
+                </span>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-medium text-slate-800">{{ contactName(c) }}</p>
+                  <p class="truncate text-xs text-slate-400">
+                    {{ c.title || t('network.noRole') }}
+                    @if (c.email) {
+                      <span class="text-slate-300">•</span> {{ c.email }}
+                    }
+                  </p>
+                </div>
+              </a>
+              <button
+                (click)="openEditContact(c)"
+                class="btn btn--ghost btn--sm"
+              >
+                {{ t('common.edit') }}
+              </button>
+              <button
+                (click)="removeContact(c)"
+                [attr.aria-label]="t('network.deleteContactAria')"
+                class="btn btn--icon btn--ghost text-slate-300 hover:bg-rose-50 hover:text-rose-600"
+              >
+                ✕
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- Applications -->
+    <section class="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        {{ t('companyDetail.applications.title', { count: d.applications.length }) }}
+      </h2>
+
+      @if (d.applications.length === 0) {
+        <p class="mt-3 text-sm text-slate-400">{{ t('companyDetail.applications.empty') }}</p>
+      } @else {
+        <ul class="mt-3 flex flex-col divide-y divide-slate-100">
+          @for (a of d.applications; track a.id) {
+            <li>
+              <a
+                [routerLink]="['/applications', a.id]"
+                class="flex items-center justify-between gap-3 py-3"
+              >
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-medium text-slate-800">{{ a.position }}</p>
+                  <p class="text-xs text-slate-400">
+                    @if (a.appliedAt) {
+                      {{ t('companyDetail.appliedOn', { date: date(a.appliedAt) }) }}
+                    } @else {
+                      {{ t('companyDetail.notSentYet') }}
+                    }
+                  </p>
+                </div>
+                <span
+                  class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [class]="statusBadge[a.status]"
+                >
+                  {{ t(statusKeys[a.status]) }}
+                </span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (showEditForm()) {
+      <app-company-form
+        [company]="d"
+        (saved)="onCompanySaved()"
+        (cancelled)="showEditForm.set(false)"
+      />
+    }
+
+    @if (showContactForm()) {
+      <app-contact-form
+        [contact]="editingContact()"
+        [defaultCompanyId]="d.id"
+        (saved)="onContactSaved()"
+        (cancelled)="showContactForm.set(false)"
+      />
+    }
+  }
+</div>

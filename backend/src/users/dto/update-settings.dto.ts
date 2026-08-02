@@ -9,7 +9,9 @@ import {
 } from 'class-validator';
 import { IsIanaTimezone } from './is-timezone.validator';
 
-const SUPPORTED_LOCALES = ['fr', 'en'] as const;
+// Authoritative allowlist. Keep in sync with the frontend's
+// core/i18n/locale.ts — the server decides, the client only offers.
+export const SUPPORTED_LOCALES = ['fr', 'en', 'de', 'es'] as const;
 
 export class UpdateSettingsDto {
   @IsOptional()

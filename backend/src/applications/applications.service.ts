@@ -207,10 +207,9 @@ export class ApplicationsService {
       dto.tagIds,
     );
 
-    // Client never sends companyId today (no company picker yet) — only
-    // companyName free text. Resolve/create the matching private Company so
-    // it stays linked into the Discover directory, same as create().
-    // An explicit companyId always wins over this auto-resolution.
+    // The form still posts free-text `companyName`; resolve it to a real
+    // Company row so the application shows up under that company in the
+    // network page. An explicit companyId always wins over this resolution.
     const companyId =
       dto.companyId === undefined && dto.companyName !== undefined
         ? await this.resolveCompanyId(userId, dto.companyName)
@@ -341,10 +340,10 @@ export class ApplicationsService {
   // --- helpers ---
 
   /**
-   * Find-or-create the user's private Company matching this free-text name
-   * (case-insensitive) so it gets linked into the shared Discover directory
-   * via CompaniesService, instead of applications only ever storing a
-   * disconnected string. Returns null for a blank/absent name.
+   * Find-or-create the user's Company matching this free-text name
+   * (case-insensitive), so applications don't just store a disconnected
+   * string and the company gets a real row in the user's network.
+   * Returns null for a blank/absent name.
    */
   private async resolveCompanyId(
     userId: number,

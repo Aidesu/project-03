@@ -1,27 +1,27 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApplicationsService } from '../core/applications.service';
-import { ALL_STATUSES, STATUS_META } from '../core/application-status';
+import { ALL_STATUSES, STATUS_BADGE, STATUS_KEYS } from '../core/application-status';
 import { AuthService } from '../core/auth.service';
 import { EmailTemplatesService } from '../core/email-templates.service';
 import {
-  EMPLOYMENT_TYPE_OPTIONS,
-  INTERVIEW_OUTCOME_LABEL,
-  INTERVIEW_TYPE_LABEL,
-  PRIORITY_OPTIONS,
-  SALARY_PERIOD_OPTIONS,
-  SOURCE_OPTIONS,
-  WORK_MODE_OPTIONS,
+  EMPLOYMENT_TYPE_KEYS,
+  INTERVIEW_OUTCOME_KEYS,
+  INTERVIEW_TYPE_KEYS,
+  SALARY_PERIOD_KEYS,
+  SOURCE_KEYS,
+  WORK_MODE_KEYS,
   labelOf,
+  labelOrRaw,
 } from '../core/enums';
+import { I18nService, TranslationKey } from '../core/i18n';
 import { ApplicationDetail, ApplicationStatus, EmailTemplate } from '../core/models';
 import { renderTemplate, TemplateVars } from '../core/template-vars';
 
 @Component({
   selector: 'app-application-detail',
-  imports: [FormsModule, RouterLink, DatePipe],
+  imports: [FormsModule, RouterLink],
   templateUrl: './application-detail.html',
 })
 export class ApplicationDetailPage {
@@ -30,17 +30,15 @@ export class ApplicationDetailPage {
   private readonly applications = inject(ApplicationsService);
   private readonly emailTemplatesApi = inject(EmailTemplatesService);
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(I18nService);
 
-  readonly statusMeta = STATUS_META;
+  readonly t = this.i18n.t;
+  readonly date = this.i18n.date;
+  readonly dateTime = this.i18n.dateTime;
+
+  readonly statusBadge = STATUS_BADGE;
+  readonly statusKeys = STATUS_KEYS;
   readonly statuses = ALL_STATUSES;
-  readonly priorityOptions = PRIORITY_OPTIONS;
-  readonly workModeOptions = WORK_MODE_OPTIONS;
-  readonly employmentTypeOptions = EMPLOYMENT_TYPE_OPTIONS;
-  readonly sourceOptions = SOURCE_OPTIONS;
-  readonly salaryPeriodOptions = SALARY_PERIOD_OPTIONS;
-  readonly interviewTypeLabel = INTERVIEW_TYPE_LABEL;
-  readonly interviewOutcomeLabel = INTERVIEW_OUTCOME_LABEL;
-  readonly labelOf = labelOf;
 
   readonly detail = signal<ApplicationDetail | null>(null);
   readonly loading = signal(true);
@@ -50,7 +48,7 @@ export class ApplicationDetailPage {
 
   readonly templates = signal<EmailTemplate[]>([]);
   readonly copied = signal(false);
-  readonly copyError = signal<string | null>(null);
+  readonly copyError = signal<TranslationKey | null>(null);
 
   selectedStatus: ApplicationStatus = 'WISHLIST';
   note = '';
@@ -83,6 +81,28 @@ export class ApplicationDetailPage {
     });
   }
 
+  // ---- Localized display helpers --------------------------------------
+
+  workModeLabel(value: ApplicationDetail['workMode']): string {
+    return labelOf(WORK_MODE_KEYS, value, this.t);
+  }
+
+  employmentTypeLabel(value: ApplicationDetail['employmentType']): string {
+    return labelOf(EMPLOYMENT_TYPE_KEYS, value, this.t);
+  }
+
+  sourceLabel(value: ApplicationDetail['source']): string {
+    return labelOf(SOURCE_KEYS, value, this.t);
+  }
+
+  interviewTypeLabel(value: string): string {
+    return labelOrRaw(INTERVIEW_TYPE_KEYS, value, this.t);
+  }
+
+  interviewOutcomeLabel(value: string): string {
+    return labelOrRaw(INTERVIEW_OUTCOME_KEYS, value, this.t);
+  }
+
   updateStatus(): void {
     const d = this.detail();
     if (!d || this.updating() || this.selectedStatus === d.status) return;
@@ -102,7 +122,7 @@ export class ApplicationDetailPage {
 
   remove(): void {
     if (this.deleting()) return;
-    if (!confirm('Supprimer définitivement cette candidature ?')) return;
+    if (!confirm(this.t('applicationDetail.danger.confirm'))) return;
     this.deleting.set(true);
     this.applications.remove(this.id).subscribe({
       next: () => this.router.navigate(['/applications']),
@@ -121,15 +141,13 @@ export class ApplicationDetailPage {
     const p = this.preview(d);
     if (!p) return;
     this.copyError.set(null);
-    const text = `Objet : ${p.subject}\n\n${p.body}`;
+    const text = `${this.t('common.emailSubjectPrefix', { subject: p.subject })}\n\n${p.body}`;
     try {
       await navigator.clipboard.writeText(text);
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
     } catch {
-      this.copyError.set(
-        'Impossible de copier automatiquement — sélectionne le texte manuellement.',
-      );
+      this.copyError.set('applicationDetail.email.copyFailed');
     }
   }
 
@@ -146,12 +164,12 @@ export class ApplicationDetailPage {
 
   salaryText(d: ApplicationDetail): string | null {
     if (d.salaryMin == null && d.salaryMax == null) return null;
-    const fmt = (n: number) => n.toLocaleString('fr-FR');
+    const fmt = (n: number) => this.i18n.number(n);
     const range =
       d.salaryMin != null && d.salaryMax != null
         ? `${fmt(d.salaryMin)} – ${fmt(d.salaryMax)}`
         : fmt((d.salaryMin ?? d.salaryMax) as number);
-    const period = labelOf(this.salaryPeriodOptions, d.salaryPeriod);
+    const period = labelOf(SALARY_PERIOD_KEYS, d.salaryPeriod, this.t);
     return `${range} ${d.salaryCurrency} ${period}`;
   }
 }

@@ -7,6 +7,10 @@ import {
   MaxLength,
 } from 'class-validator';
 
+/**
+ * PATCH semantics: an absent key leaves the column untouched, while an
+ * explicit `null` clears it (including unlinking the company).
+ */
 export class UpdateContactDto {
   @IsOptional()
   @IsString()
@@ -16,34 +20,34 @@ export class UpdateContactDto {
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  lastName?: string;
+  lastName?: string | null;
 
   @IsOptional()
   @IsUUID()
-  companyId?: string;
+  companyId?: string | null;
 
   @IsOptional()
   @IsEmail()
   @MaxLength(254)
-  email?: string;
+  email?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(40)
-  phone?: string;
+  phone?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  title?: string;
+  title?: string | null;
 
   @IsOptional()
   @IsUrl()
   @MaxLength(2048)
-  linkedinUrl?: string;
+  linkedinUrl?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(5000)
-  notes?: string;
+  notes?: string | null;
 }

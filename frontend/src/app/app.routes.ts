@@ -27,13 +27,23 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/applications').then((m) => m.Applications),
       },
       {
-        path: 'discover',
-        loadComponent: () => import('./pages/discover').then((m) => m.Discover),
+        path: 'network',
+        loadComponent: () => import('./pages/network').then((m) => m.Network),
       },
       {
-        path: 'discover/:id',
-        loadComponent: () => import('./pages/discover-detail').then((m) => m.DiscoverDetail),
+        path: 'network/companies/:id',
+        loadComponent: () =>
+          import('./pages/company-detail').then((m) => m.CompanyDetailPage),
       },
+      {
+        path: 'network/contacts/:id',
+        loadComponent: () =>
+          import('./pages/contact-detail').then((m) => m.ContactDetailPage),
+      },
+      // The public company directory was withdrawn — old links land on the
+      // private network page instead of a dead route.
+      { path: 'discover', redirectTo: 'network' },
+      { path: 'discover/:id', redirectTo: 'network' },
       {
         path: 'progression',
         loadComponent: () => import('./pages/progression').then((m) => m.Progression),

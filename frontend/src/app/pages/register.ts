@@ -1,29 +1,29 @@
-import { Component, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { I18nService, TranslationKey } from '../core/i18n';
+import { LanguageSwitcher } from '../shared/language-switcher/language-switcher';
 
 // Mirrors the backend RegisterDto (password min length 12).
 const PASSWORD_MIN = 12;
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, LanguageSwitcher],
   templateUrl: './register.html',
 })
 export class Register {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18nService);
 
+  readonly t = this.i18n.t;
   readonly passwordMin = PASSWORD_MIN;
   readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
+  readonly error = signal<TranslationKey | null>(null);
 
   readonly form = this.fb.nonNullable.group({
     name: [''],
@@ -53,10 +53,10 @@ export class Register {
     }
   }
 
-  private messageFor(err: unknown): string {
+  private messageFor(err: unknown): TranslationKey {
     if (err instanceof HttpErrorResponse && err.status === 409) {
-      return 'Un compte existe déjà avec cet email.';
+      return 'register.emailTaken';
     }
-    return 'Inscription impossible. Vérifie tes informations et réessaie.';
+    return 'register.error';
   }
 }

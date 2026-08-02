@@ -14,6 +14,7 @@ const ctx: RefreshContext = { userAgent: 'jest', ip: '127.0.0.1' };
 function buildUser(overrides: Partial<User> = {}): User {
   return {
     id: 1,
+    publicId: '00000000-0000-4000-8000-000000000001',
     email: 'user@example.com',
     name: null,
     passwordHash: 'placeholder',

@@ -12,7 +12,6 @@ import { throttlerConfig } from './common/throttler.config';
 import { CompaniesModule } from './companies/companies.module';
 import { validateEnv } from './config/env.validation';
 import { ContactsModule } from './contacts/contacts.module';
-import { DiscoverModule } from './discover/discover.module';
 import { EmailTemplatesModule } from './email-templates/email-templates.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { InterviewsModule } from './interviews/interviews.module';
@@ -35,7 +34,6 @@ import { UsersModule } from './users/users.module';
     ApplicationsModule,
     CompaniesModule,
     ContactsModule,
-    DiscoverModule,
     InterviewsModule,
     RemindersModule,
     TagsModule,

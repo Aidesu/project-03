@@ -1,5 +1,6 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { I18nService } from '../../core/i18n';
 
 @Component({
   selector: 'app-player-card',
@@ -7,6 +8,10 @@ import { RouterLink } from '@angular/router';
   templateUrl: './player-card.html',
 })
 export class PlayerCard {
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
+  protected readonly num = this.i18n.number;
+
   readonly level = input.required<number>();
   readonly xp = input.required<number>();
   readonly xpIntoLevel = input.required<number>();

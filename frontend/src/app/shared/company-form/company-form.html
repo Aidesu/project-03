@@ -1,0 +1,96 @@
+<app-modal
+  [title]="isEdit ? t('companyForm.editTitle') : t('companyForm.newTitle')"
+  (closed)="cancelled.emit()"
+>
+  <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-slate-700">{{ t('companyForm.name') }}</span>
+      <input
+        type="text"
+        formControlName="name"
+        [placeholder]="t('companyForm.namePlaceholder')"
+        class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      />
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <span class="text-xs text-rose-600">{{ t('companyForm.nameRequired') }}</span>
+      }
+    </label>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">{{ t('companyForm.website') }}</span>
+        <input
+          type="text"
+          formControlName="website"
+          [placeholder]="t('companyForm.websitePlaceholder')"
+          class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">{{ t('companyForm.industry') }}</span>
+        <input
+          type="text"
+          formControlName="industry"
+          [placeholder]="t('companyForm.industryPlaceholder')"
+          class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">{{ t('companyForm.city') }}</span>
+        <input
+          type="text"
+          formControlName="location"
+          [placeholder]="t('companyForm.cityPlaceholder')"
+          class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">{{ t('companyForm.size') }}</span>
+        <select
+          formControlName="size"
+          class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        >
+          <option value="">{{ t('companyForm.sizeNone') }}</option>
+          @for (o of sizeOptions(); track o.value) {
+            <option [value]="o.value">{{ o.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-slate-700">{{ t('companyForm.notes') }}</span>
+      <textarea
+        formControlName="notes"
+        rows="4"
+        [placeholder]="t('companyForm.notesPlaceholder')"
+        class="resize-y rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      ></textarea>
+      <span class="text-xs text-slate-400">{{ t('companyForm.notesHint') }}</span>
+    </label>
+
+    @if (formError(); as key) {
+      <p class="text-sm text-rose-600">{{ t(key) }}</p>
+    }
+
+    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+      <button
+        type="button"
+        (click)="cancelled.emit()"
+        class="btn btn--secondary"
+      >
+        {{ t('common.cancel') }}
+      </button>
+      <button
+        type="submit"
+        [disabled]="saving()"
+        class="btn btn--primary"
+      >
+        {{ saving() ? t('common.saving') : t('common.save') }}
+      </button>
+    </div>
+  </form>
+</app-modal>

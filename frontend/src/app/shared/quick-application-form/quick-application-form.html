@@ -1,0 +1,84 @@
+<app-modal [title]="t('quickAdd.title')" (closed)="cancelled.emit()">
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="flex flex-col gap-4">
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-medium text-slate-700">{{
+        t('applicationForm.position')
+      }}</span>
+      <input
+        type="text"
+        formControlName="position"
+        [placeholder]="t('applicationForm.positionPlaceholder')"
+        class="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      />
+      @if (form.controls.position.touched && form.controls.position.invalid) {
+        <span class="text-xs text-rose-600">{{
+          t('applicationForm.positionRequired')
+        }}</span>
+      }
+    </label>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">{{
+          t('applicationForm.company')
+        }}</span>
+        <app-company-picker
+          formControlName="companyName"
+          [placeholder]="t('applicationForm.companyPlaceholder')"
+          (companySelected)="onCompanyPicked($event)"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">{{
+          t('applicationForm.status')
+        }}</span>
+        <select
+          formControlName="status"
+          class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        >
+          @for (s of statuses; track s) {
+            <option [value]="s">{{ t(statusKeys[s]) }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <p class="text-xs text-slate-400">{{ t('quickAdd.hint') }}</p>
+
+    @if (error(); as key) {
+      <div
+        class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+      >
+        {{ t(key) }}
+      </div>
+    }
+
+    <div
+      class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4"
+    >
+      <button
+        type="button"
+        (click)="submit(true)"
+        [disabled]="saving()"
+        class="btn btn--ghost btn--next mr-auto text-brand-700 hover:text-brand-800 hover:bg-brand-50"
+      >
+        {{ t('quickAdd.saveAndDetails') }}
+      </button>
+      <button
+        type="button"
+        (click)="cancelled.emit()"
+        class="btn btn--ghost"
+      >
+        {{ t('common.cancel') }}
+      </button>
+      <button
+        type="submit"
+        [disabled]="saving()"
+        class="btn btn--primary"
+      >
+        {{ saving() ? t('common.saving') : t('common.save') }}
+      </button>
+    </div>
+  </form>
+</app-modal>

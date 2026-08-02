@@ -1,22 +1,30 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { AuthService } from '../core/auth.service';
 import {
+  ACHIEVEMENT_CATEGORY_KEYS,
   ACHIEVEMENT_CATEGORY_ORDER,
   AchievementCategory,
   achievementCategory,
+  achievementDescription,
+  achievementName,
   toRoman,
 } from '../core/enums';
 import { GamificationService } from '../core/gamification.service';
+import { I18nService } from '../core/i18n';
 import { initialsOf } from '../core/initials';
 import { Achievement, GamificationProfile } from '../core/models';
 import { PlayerCard } from '../shared/player-card/player-card';
 
+/** An achievement with its tier numeral and its labels resolved for display. */
 interface RankedAchievement extends Achievement {
   tier: string;
+  displayName: string;
+  displayDescription: string;
 }
 
 interface AchievementGroup {
   category: AchievementCategory;
+  categoryLabel: string;
   achievements: RankedAchievement[];
 }
 
@@ -28,7 +36,10 @@ interface AchievementGroup {
 export class Progression {
   private readonly gamification = inject(GamificationService);
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(I18nService);
 
+  readonly t = this.i18n.t;
+  readonly dateLong = this.i18n.dateLong;
   readonly user = this.auth.user;
   readonly profile = signal<GamificationProfile | null>(null);
   readonly achievements = signal<Achievement[] | null>(null);
@@ -47,10 +58,8 @@ export class Progression {
 
   readonly streakMessage = computed(() => {
     const p = this.profile();
-    if (!p || p.currentStreakDays === 0) {
-      return 'Ajoute une candidature aujourd’hui pour démarrer une série.';
-    }
-    return `Série en cours — continue comme ça.`;
+    if (!p || p.currentStreakDays === 0) return this.t('progression.streakNone');
+    return this.t('progression.streakActive');
   });
 
   readonly groups = computed<AchievementGroup[]>(() => {
@@ -68,9 +77,12 @@ export class Progression {
         const sorted = [...byCategory.get(category)!].sort((a, b) => a.threshold - b.threshold);
         return {
           category,
+          categoryLabel: this.t(ACHIEVEMENT_CATEGORY_KEYS[category]),
           achievements: sorted.map((a, i) => ({
             ...a,
             tier: sorted.length > 1 ? toRoman(i + 1) : '',
+            displayName: achievementName(a.code, a.name, this.t),
+            displayDescription: achievementDescription(a.code, a.description, this.t),
           })),
         };
       },
@@ -94,11 +106,4 @@ export class Progression {
     });
   }
 
-  formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }
 }

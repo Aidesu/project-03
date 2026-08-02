@@ -53,6 +53,16 @@
   --shadow-elevated: 0 24px 48px -20px rgba(29, 39, 23, 0.45), 0 8px 20px -10px rgba(15, 23, 42, 0.16);
 }
 
+/* Button glyphs as alpha masks rather than inline SVG: the icon is decorative
+   (the label already says where the control goes), so it belongs in the
+   stylesheet and not repeated across twenty templates. */
+@theme {
+  --icon-chevron-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.5 4.5 7 10l5.5 5.5'/%3E%3C/svg%3E");
+  --icon-chevron-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7.5 4.5 13 10l-5.5 5.5'/%3E%3C/svg%3E");
+  --icon-external: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 4.5H5.5A1.5 1.5 0 0 0 4 6v8.5A1.5 1.5 0 0 0 5.5 16H14a1.5 1.5 0 0 0 1.5-1.5V12'/%3E%3Cpath d='M11.5 4.5h4v4M15.5 4.5 9 11'/%3E%3C/svg%3E");
+  --icon-plus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M10 4.5v11M4.5 10h11'/%3E%3C/svg%3E");
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
@@ -77,7 +87,175 @@
  * shine sweep. The player card's level badge reuses this same visual  *
  * language, so "your rank" and "your achievements" read as one family.*
  * ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ *
+ * Buttons. One shape, four intents, three sizes.                      *
+ *                                                                     *
+ * The press is the signature: a hairline of darker ink sits under      *
+ * every filled control and collapses when you push it, so a button     *
+ * behaves like something stamped into paper rather than a coloured     *
+ * rectangle. It is the only flourish here — the stitched-patch gesture *
+ * belongs to the medals and must not be competed with.                 *
+ * ------------------------------------------------------------------ */
 @layer components {
+  .btn {
+    @apply inline-flex shrink-0 cursor-pointer items-center justify-center gap-2
+      rounded-lg px-4 py-2.5 text-sm font-semibold whitespace-nowrap
+      transition duration-150 select-none;
+  }
+
+  .btn:focus-visible {
+    @apply outline-none ring-2 ring-brand-500/50 ring-offset-2 ring-offset-slate-50;
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  /* Nothing moves under a pointer that cannot activate it. */
+  .btn:not(:disabled):active {
+    @apply translate-y-px;
+  }
+
+  /* ---- Intents ---- */
+
+  .btn--primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+    box-shadow:
+      0 1px 0 theme(--color-brand-800),
+      0 2px 8px -2px rgb(74 107 51 / 45%);
+  }
+
+  .btn--primary:not(:disabled):active {
+    box-shadow: 0 0 0 theme(--color-brand-800);
+  }
+
+  .btn--secondary {
+    @apply border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800;
+    box-shadow: 0 1px 0 rgb(15 23 42 / 5%);
+  }
+
+  .btn--secondary:not(:disabled):active {
+    box-shadow: none;
+  }
+
+  /* No chrome until you reach for it — for cancels and tertiary actions. */
+  .btn--ghost {
+    @apply text-slate-500 hover:bg-slate-100 hover:text-slate-800;
+  }
+
+  .btn--danger {
+    @apply border border-rose-200 bg-white text-rose-600 hover:border-rose-300 hover:bg-rose-50;
+  }
+
+  .btn--danger:focus-visible {
+    @apply ring-rose-500/50;
+  }
+
+  /* Filled red: only where the action cannot be undone. */
+  .btn--destructive {
+    @apply bg-rose-600 text-white hover:bg-rose-700;
+    box-shadow:
+      0 1px 0 theme(--color-rose-800),
+      0 2px 8px -2px rgb(225 29 72 / 40%);
+  }
+
+  .btn--destructive:not(:disabled):active {
+    box-shadow: 0 0 0 theme(--color-rose-800);
+  }
+
+  .btn--destructive:focus-visible {
+    @apply ring-rose-500/60;
+  }
+
+  /* The one gold control, and only on the dark canvas card. */
+  .btn--brass {
+    @apply border border-brass-500/40 text-brass-500 hover:border-brass-500/70 hover:bg-brass-500/10;
+  }
+
+  .btn--brass:focus-visible {
+    @apply ring-brass-500/60 ring-offset-brand-900;
+  }
+
+  /* ---- Sizes ---- */
+
+  .btn--sm {
+    @apply gap-1.5 px-3 py-1.5 text-xs;
+  }
+
+  .btn--lg {
+    @apply px-5 py-3;
+  }
+
+  /* Square, label-less. Always needs an aria-label. */
+  .btn--icon {
+    @apply h-9 w-9 gap-0 p-0;
+  }
+
+  /* ---- Directional affordances ---- */
+  /* The glyph is a mask on a pseudo-element, so it inherits the text colour
+     and stays out of the accessibility tree. */
+
+  .btn--back::before,
+  .btn--prev::before,
+  .btn--add::before,
+  .btn--next::after,
+  .link-external::after {
+    content: '';
+    display: inline-block;
+    flex: none;
+    width: 1.05em;
+    height: 1.05em;
+    background-color: currentColor;
+    transition: transform 150ms ease;
+  }
+
+  .btn--back::before,
+  .btn--prev::before {
+    mask: var(--icon-chevron-left) center / contain no-repeat;
+    -webkit-mask: var(--icon-chevron-left) center / contain no-repeat;
+  }
+
+  .btn--next::after {
+    mask: var(--icon-chevron-right) center / contain no-repeat;
+    -webkit-mask: var(--icon-chevron-right) center / contain no-repeat;
+  }
+
+  .btn--add::before {
+    mask: var(--icon-plus) center / contain no-repeat;
+    -webkit-mask: var(--icon-plus) center / contain no-repeat;
+  }
+
+  .btn--add:not(:disabled):hover::before {
+    transform: rotate(90deg);
+  }
+
+  /* Leaning the way it will take you. */
+  .btn--back:not(:disabled):hover::before,
+  .btn--prev:not(:disabled):hover::before {
+    transform: translateX(-2px);
+  }
+
+  .btn--next:not(:disabled):hover::after {
+    transform: translateX(2px);
+  }
+
+  /* Links that leave the app say so, in the same visual language. */
+  .link-external {
+    @apply inline-flex items-center gap-1.5 font-medium text-brand-600 underline decoration-brand-600/25 underline-offset-4 transition hover:text-brand-700 hover:decoration-brand-600/60;
+  }
+
+  .link-external::after {
+    width: 0.9em;
+    height: 0.9em;
+    mask: var(--icon-external) center / contain no-repeat;
+    -webkit-mask: var(--icon-external) center / contain no-repeat;
+  }
+
+  .link-external:focus-visible {
+    @apply rounded-sm outline-none ring-2 ring-brand-500/50 ring-offset-2;
+  }
+
   .medal-ring {
     position: absolute;
     inset: 0;
@@ -154,7 +332,21 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .medal-disc--unlocked::after {
+  .medal-disc--unlocked::after,
+  .btn,
+  .btn::before,
+  .btn::after,
+  .link-external::after {
     transition: none;
+  }
+
+  .btn:not(:disabled):active {
+    transform: none;
+  }
+
+  .btn--back:not(:disabled):hover::before,
+  .btn--prev:not(:disabled):hover::before,
+  .btn--next:not(:disabled):hover::after {
+    transform: none;
   }
 }

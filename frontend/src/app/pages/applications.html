@@ -1,18 +1,26 @@
 <header class="flex flex-wrap items-end justify-between gap-3">
   <div>
     <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
-      Candidatures
+      {{ t('applications.title') }}
     </h1>
-    <p class="text-slate-500">Suis l'avancement de chaque opportunité.</p>
+    <p class="text-slate-500">{{ t('applications.subtitle') }}</p>
   </div>
 
-  <a
-    routerLink="/applications/new"
-    class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition hover:bg-brand-700"
+  <button
+    type="button"
+    (click)="quickAddOpen.set(true)"
+    class="btn btn--primary btn--add"
   >
-    + Nouvelle candidature
-  </a>
+    {{ t('applications.new') }}
+  </button>
 </header>
+
+@if (quickAddOpen()) {
+  <app-quick-application-form
+    (saved)="onQuickAdded($event)"
+    (cancelled)="quickAddOpen.set(false)"
+  />
+}
 
 <!-- Filters -->
 <div class="mt-6 flex flex-wrap items-center gap-3">
@@ -20,7 +28,7 @@
     type="search"
     [(ngModel)]="search"
     (keyup.enter)="applyFilters()"
-    placeholder="Rechercher un poste, une entreprise…"
+    [placeholder]="t('applications.searchPlaceholder')"
     class="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
   />
 
@@ -29,9 +37,9 @@
     (ngModelChange)="applyFilters()"
     class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
   >
-    <option value="">Tous les statuts</option>
+    <option value="">{{ t('applications.allStatuses') }}</option>
     @for (s of statuses; track s) {
-      <option [value]="s">{{ statusMeta[s].label }}</option>
+      <option [value]="s">{{ t(statusKeys[s]) }}</option>
     }
   </select>
 
@@ -47,22 +55,22 @@
   <div
     class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700"
   >
-    Impossible de charger les candidatures.
+    {{ t('applications.loadError') }}
   </div>
 } @else if (data(); as d) {
   @if (d.items.length === 0) {
     <div
       class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-16 text-center"
     >
-      <p class="text-sm font-medium text-slate-600">Aucune candidature pour l'instant.</p>
-      <p class="mt-1 text-sm text-slate-400">
-        Lance ta quête en ajoutant ta première candidature.
-      </p>
-      <a
-        routerLink="/applications/new"
-        class="mt-4 inline-block rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition hover:bg-brand-700"
-        >+ Nouvelle candidature</a
+      <p class="text-sm font-medium text-slate-600">{{ t('applications.empty.title') }}</p>
+      <p class="mt-1 text-sm text-slate-400">{{ t('applications.empty.body') }}</p>
+      <button
+        type="button"
+        (click)="quickAddOpen.set(true)"
+        class="mt-4 btn btn--primary btn--add"
       >
+        {{ t('applications.new') }}
+      </button>
     </div>
   } @else {
     <ul class="mt-6 flex flex-col gap-3">
@@ -86,7 +94,7 @@
               }
             </div>
             <p class="truncate text-sm text-slate-500">
-              {{ app.company?.name || app.companyName || 'Entreprise inconnue' }}
+              {{ app.company?.name || app.companyName || t('applications.unknownCompany') }}
               @if (app.location) {
                 <span class="text-slate-300">•</span> {{ app.location }}
               }
@@ -95,19 +103,19 @@
 
           @if (app._count.interviews > 0) {
             <span class="hidden text-xs font-medium text-slate-400 sm:inline">
-              {{ app._count.interviews }} entretien(s)
+              {{ t('applications.interviews', { count: app._count.interviews }) }}
             </span>
           }
 
           <span
             class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
-            [class]="statusMeta[app.status].badge"
+            [class]="statusBadge[app.status]"
           >
-            {{ statusMeta[app.status].label }}
+            {{ t(statusKeys[app.status]) }}
           </span>
 
           <span class="hidden w-24 text-right text-xs text-slate-400 md:inline">
-            {{ app.appliedAt ? (app.appliedAt | date: 'dd/MM/yy') : '—' }}
+            {{ date(app.appliedAt) }}
           </span>
         </li>
       }
@@ -117,19 +125,23 @@
     @if (d.pageCount > 1) {
       <div class="mt-6 flex items-center justify-center gap-3">
         <button
+          type="button"
           (click)="goTo(d.page - 1)"
           [disabled]="d.page <= 1"
-          class="rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          class="btn btn--secondary btn--sm btn--prev"
         >
-          ← Précédent
+          {{ t('common.previous') }}
         </button>
-        <span class="text-sm text-slate-500">Page {{ d.page }} / {{ d.pageCount }}</span>
+        <span class="text-sm text-slate-500">{{
+          t('common.pageOf', { page: d.page, pageCount: d.pageCount })
+        }}</span>
         <button
+          type="button"
           (click)="goTo(d.page + 1)"
           [disabled]="d.page >= d.pageCount"
-          class="rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          class="btn btn--secondary btn--sm btn--next"
         >
-          Suivant →
+          {{ t('common.next') }}
         </button>
       </div>
     }

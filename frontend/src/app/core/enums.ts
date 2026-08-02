@@ -1,8 +1,8 @@
+import { Translate, TranslationKey } from './i18n';
 import {
   ApplicationSource,
   EmailTemplateCategory,
   EmploymentType,
-  Priority,
   SalaryPeriod,
   WorkMode,
 } from './models';
@@ -12,110 +12,191 @@ export interface Option<T extends string> {
   label: string;
 }
 
-export const PRIORITY_OPTIONS: Option<Priority>[] = [
-  { value: 'LOW', label: 'Basse' },
-  { value: 'MEDIUM', label: 'Moyenne' },
-  { value: 'HIGH', label: 'Haute' },
-];
+/**
+ * Each enum maps its values to translation keys instead of to literal labels,
+ * so the option lists are rebuilt in the active language. `satisfies` makes the
+ * maps exhaustive over the enum *and* checks every key exists in the catalogue.
+ */
+export const WORK_MODE_KEYS = {
+  ON_SITE: 'workMode.ON_SITE',
+  HYBRID: 'workMode.HYBRID',
+  REMOTE: 'workMode.REMOTE',
+} satisfies Record<WorkMode, TranslationKey>;
 
-export const WORK_MODE_OPTIONS: Option<WorkMode>[] = [
-  { value: 'ON_SITE', label: 'Sur site' },
-  { value: 'HYBRID', label: 'Hybride' },
-  { value: 'REMOTE', label: 'Télétravail' },
-];
+export const EMPLOYMENT_TYPE_KEYS = {
+  FULL_TIME: 'employmentType.FULL_TIME',
+  PART_TIME: 'employmentType.PART_TIME',
+  CONTRACT: 'employmentType.CONTRACT',
+  INTERNSHIP: 'employmentType.INTERNSHIP',
+  APPRENTICESHIP: 'employmentType.APPRENTICESHIP',
+  FREELANCE: 'employmentType.FREELANCE',
+  TEMPORARY: 'employmentType.TEMPORARY',
+} satisfies Record<EmploymentType, TranslationKey>;
 
-export const EMPLOYMENT_TYPE_OPTIONS: Option<EmploymentType>[] = [
-  { value: 'FULL_TIME', label: 'Temps plein' },
-  { value: 'PART_TIME', label: 'Temps partiel' },
-  { value: 'CONTRACT', label: 'CDD' },
-  { value: 'INTERNSHIP', label: 'Stage' },
-  { value: 'APPRENTICESHIP', label: 'Alternance' },
-  { value: 'FREELANCE', label: 'Freelance' },
-  { value: 'TEMPORARY', label: 'Intérim' },
-];
+export const SOURCE_KEYS = {
+  JOB_BOARD: 'source.JOB_BOARD',
+  LINKEDIN: 'source.LINKEDIN',
+  COMPANY_WEBSITE: 'source.COMPANY_WEBSITE',
+  REFERRAL: 'source.REFERRAL',
+  RECRUITER: 'source.RECRUITER',
+  CAREER_FAIR: 'source.CAREER_FAIR',
+  SPONTANEOUS: 'source.SPONTANEOUS',
+  OTHER: 'source.OTHER',
+} satisfies Record<ApplicationSource, TranslationKey>;
 
-export const SOURCE_OPTIONS: Option<ApplicationSource>[] = [
-  { value: 'JOB_BOARD', label: "Site d'emploi" },
-  { value: 'LINKEDIN', label: 'LinkedIn' },
-  { value: 'COMPANY_WEBSITE', label: 'Site entreprise' },
-  { value: 'REFERRAL', label: 'Cooptation' },
-  { value: 'RECRUITER', label: 'Recruteur' },
-  { value: 'CAREER_FAIR', label: 'Salon / forum' },
-  { value: 'SPONTANEOUS', label: 'Candidature spontanée' },
-  { value: 'OTHER', label: 'Autre' },
-];
+export const SALARY_PERIOD_KEYS = {
+  HOUR: 'salaryPeriod.HOUR',
+  DAY: 'salaryPeriod.DAY',
+  MONTH: 'salaryPeriod.MONTH',
+  YEAR: 'salaryPeriod.YEAR',
+} satisfies Record<SalaryPeriod, TranslationKey>;
 
-export const SALARY_PERIOD_OPTIONS: Option<SalaryPeriod>[] = [
-  { value: 'HOUR', label: '/ heure' },
-  { value: 'DAY', label: '/ jour' },
-  { value: 'MONTH', label: '/ mois' },
-  { value: 'YEAR', label: '/ an' },
-];
+export const EMAIL_TEMPLATE_CATEGORY_KEYS = {
+  FOLLOW_UP: 'emailCategory.FOLLOW_UP',
+  THANK_YOU: 'emailCategory.THANK_YOU',
+  COLD_OUTREACH: 'emailCategory.COLD_OUTREACH',
+  OFFER_NEGOTIATION: 'emailCategory.OFFER_NEGOTIATION',
+  WITHDRAWAL: 'emailCategory.WITHDRAWAL',
+  OTHER: 'emailCategory.OTHER',
+} satisfies Record<EmailTemplateCategory, TranslationKey>;
 
-export const EMAIL_TEMPLATE_CATEGORY_OPTIONS: Option<EmailTemplateCategory>[] = [
-  { value: 'FOLLOW_UP', label: 'Relance' },
-  { value: 'THANK_YOU', label: 'Remerciement' },
-  { value: 'COLD_OUTREACH', label: 'Candidature spontanée' },
-  { value: 'OFFER_NEGOTIATION', label: "Négociation d'offre" },
-  { value: 'WITHDRAWAL', label: 'Retrait de candidature' },
-  { value: 'OTHER', label: 'Autre' },
-];
+/**
+ * Company headcount brackets. Free text in the schema (`Company.size`), kept
+ * as a fixed list here so the values stay groupable across companies.
+ */
+export const COMPANY_SIZE_KEYS = {
+  '1-10': 'companySize.1-10',
+  '11-50': 'companySize.11-50',
+  '51-200': 'companySize.51-200',
+  '201-500': 'companySize.201-500',
+  '501-1000': 'companySize.501-1000',
+  '1000+': 'companySize.1000+',
+} satisfies Record<string, TranslationKey>;
 
-/** Resolve the French label for an enum value, or '' when unset/unknown. */
-export function labelOf<T extends string>(
-  options: Option<T>[],
-  value: T | null | undefined,
-): string {
-  return options.find((o) => o.value === value)?.label ?? '';
+// Interview enums — read-only display for now (no interview UI yet). Typed
+// against `string` because the API may add a value before the client knows it.
+export const INTERVIEW_TYPE_KEYS = {
+  PHONE_SCREEN: 'interviewType.PHONE_SCREEN',
+  HR: 'interviewType.HR',
+  TECHNICAL: 'interviewType.TECHNICAL',
+  TAKE_HOME: 'interviewType.TAKE_HOME',
+  SYSTEM_DESIGN: 'interviewType.SYSTEM_DESIGN',
+  BEHAVIORAL: 'interviewType.BEHAVIORAL',
+  ONSITE: 'interviewType.ONSITE',
+  PANEL: 'interviewType.PANEL',
+  FINAL: 'interviewType.FINAL',
+  OTHER: 'interviewType.OTHER',
+} satisfies Record<string, TranslationKey>;
+
+export const INTERVIEW_OUTCOME_KEYS = {
+  PENDING: 'interviewOutcome.PENDING',
+  PASSED: 'interviewOutcome.PASSED',
+  FAILED: 'interviewOutcome.FAILED',
+  CANCELED: 'interviewOutcome.CANCELED',
+  NO_SHOW: 'interviewOutcome.NO_SHOW',
+} satisfies Record<string, TranslationKey>;
+
+/** Builds a `<select>` option list in the active language, preserving order. */
+export function optionsFrom<T extends string>(
+  keys: Record<T, TranslationKey>,
+  t: Translate,
+): Option<T>[] {
+  return (Object.keys(keys) as T[]).map((value) => ({
+    value,
+    label: t(keys[value]),
+  }));
 }
 
-// Interview enums — read-only display for now (no interview UI yet).
-export const INTERVIEW_TYPE_LABEL: Record<string, string> = {
-  PHONE_SCREEN: 'Préqualif téléphonique',
-  HR: 'RH',
-  TECHNICAL: 'Technique',
-  TAKE_HOME: 'Test à la maison',
-  SYSTEM_DESIGN: 'System design',
-  BEHAVIORAL: 'Comportemental',
-  ONSITE: 'Sur site',
-  PANEL: 'Panel',
-  FINAL: 'Final',
-  OTHER: 'Autre',
-};
+/**
+ * Label for a single enum value. An unknown or unset value yields '' so the
+ * caller can decide what a missing value looks like.
+ */
+export function labelOf<T extends string>(
+  keys: Partial<Record<T, TranslationKey>>,
+  value: T | null | undefined,
+  t: Translate,
+): string {
+  if (!value) return '';
+  const key = keys[value];
+  return key ? t(key) : '';
+}
 
-export const INTERVIEW_OUTCOME_LABEL: Record<string, string> = {
-  PENDING: 'À venir',
-  PASSED: 'Réussi',
-  FAILED: 'Échoué',
-  CANCELED: 'Annulé',
-  NO_SHOW: 'Absence',
-};
+/**
+ * Same, but for values the server may extend beyond what this client knows
+ * (interview types/outcomes): falls back to the raw value rather than blanking.
+ */
+export function labelOrRaw(
+  keys: Record<string, TranslationKey>,
+  value: string,
+  t: Translate,
+): string {
+  const key = keys[value];
+  return key ? t(key) : value;
+}
 
 // ---- Achievements ---------------------------------------------------------
-// Achievement.code is the only signal we have client-side (the catalog itself
-// stays generic server-side) — group and rank purely from its wording.
+// Achievement.code is the only stable signal we have client-side, so grouping,
+// ranking and the localized name/description all key off it. The server's
+// `name`/`description` remain the fallback for a code this build doesn't know.
 
 export type AchievementCategory =
-  | 'Candidatures'
-  | 'Entretiens'
-  | 'Offres'
-  | 'Discipline'
-  | 'Niveau';
+  | 'applications'
+  | 'interviews'
+  | 'offers'
+  | 'discipline'
+  | 'level';
 
 export const ACHIEVEMENT_CATEGORY_ORDER: AchievementCategory[] = [
-  'Candidatures',
-  'Entretiens',
-  'Offres',
-  'Discipline',
-  'Niveau',
+  'applications',
+  'interviews',
+  'offers',
+  'discipline',
+  'level',
 ];
 
+export const ACHIEVEMENT_CATEGORY_KEYS = {
+  applications: 'achievementCategory.applications',
+  interviews: 'achievementCategory.interviews',
+  offers: 'achievementCategory.offers',
+  discipline: 'achievementCategory.discipline',
+  level: 'achievementCategory.level',
+} satisfies Record<AchievementCategory, TranslationKey>;
+
 export function achievementCategory(code: string): AchievementCategory {
-  if (code.includes('APPLICATION')) return 'Candidatures';
-  if (code.includes('INTERVIEW')) return 'Entretiens';
-  if (code.includes('OFFER') || code.includes('ACCEPTED')) return 'Offres';
-  if (code.includes('STREAK')) return 'Discipline';
-  return 'Niveau';
+  if (code.includes('APPLICATION')) return 'applications';
+  if (code.includes('INTERVIEW')) return 'interviews';
+  if (code.includes('OFFER') || code.includes('ACCEPTED')) return 'offers';
+  if (code.includes('STREAK')) return 'discipline';
+  return 'level';
+}
+
+/** Catalogue codes this build ships translations for. */
+const TRANSLATED_ACHIEVEMENTS = new Set([
+  'FIRST_APPLICATION',
+  'TEN_APPLICATIONS',
+  'TWENTY_FIVE_APPLICATIONS',
+  'FIRST_INTERVIEW',
+  'FIVE_INTERVIEWS',
+  'FIRST_OFFER',
+  'OFFER_ACCEPTED',
+  'STREAK_7',
+  'STREAK_30',
+  'LEVEL_5',
+  'LEVEL_10',
+]);
+
+export function achievementName(code: string, fallback: string, t: Translate): string {
+  if (!TRANSLATED_ACHIEVEMENTS.has(code)) return fallback;
+  return t(`achievement.${code}.name` as TranslationKey);
+}
+
+export function achievementDescription(
+  code: string,
+  fallback: string,
+  t: Translate,
+): string {
+  if (!TRANSLATED_ACHIEVEMENTS.has(code)) return fallback;
+  return t(`achievement.${code}.description` as TranslationKey);
 }
 
 const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V'];
