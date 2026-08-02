@@ -1,9 +1,10 @@
 @import 'tailwindcss';
 
 /* ------------------------------------------------------------------ *
- * Design tokens — "carnet de quête": your job search kept like a      *
- * field ledger. Ink navy carries the product; a wax-seal gold marks   *
- * XP/rank, a muted stamp red marks streaks. No neon, no gradients.    *
+ * Design tokens — "carnet d'expédition": your job search kept like a  *
+ * field journal. Moss ink carries the product; an ember trail marks   *
+ * XP/rank/streaks, and a single sparing brass touch marks the rare    *
+ * "treasure" moment. No neon, no navy, no cream-and-serif default.    *
  * ------------------------------------------------------------------ */
 @theme {
   --font-sans:
@@ -12,38 +13,44 @@
   --font-mono:
     'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
 
-  /* brand = ink navy ramp. Was a bright indigo; the dashboard now reads like an
-     official document (dossiers, stamps, ledgers) rather than a game HUD. */
-  --color-brand-50: #eef1f6;
-  --color-brand-100: #dce3ed;
-  --color-brand-200: #b9c8dc;
-  --color-brand-300: #8da2c2;
-  --color-brand-400: #5e7a9f;
-  --color-brand-500: #3d5a80;
-  --color-brand-600: #2e4763;
-  --color-brand-700: #223650;
-  --color-brand-800: #182740;
-  --color-brand-900: #101b2e;
+  /* brand = moss ramp. Was ink navy; the product now reads like a canvas
+     field journal (contour maps, trail badges, waypoint marks) rather than
+     an official dossier or a game HUD. */
+  --color-brand-50: #f2f5ec;
+  --color-brand-100: #e2ead6;
+  --color-brand-200: #c7d8ac;
+  --color-brand-300: #a6c081;
+  --color-brand-400: #82a25b;
+  --color-brand-500: #62843f;
+  --color-brand-600: #4a6b33;
+  --color-brand-700: #3a5527;
+  --color-brand-800: #2b3a22;
+  --color-brand-900: #1d2717;
 
-  /* xp = wax-seal gold. Reserved for XP, rank and unlocked achievements —
+  /* xp = ember trail. Reserved for XP, rank and unlocked achievements —
      never used as a generic UI/button color, so it stays meaningful. */
-  --color-xp-400: #e4b95c;
-  --color-xp-500: #c7943a;
-  --color-xp-600: #9c6e22;
+  --color-xp-400: #f0805a;
+  --color-xp-500: #e1592e;
+  --color-xp-600: #b8401c;
 
-  /* stamp = muted postmark red, used sparingly for streaks/urgency only. */
-  --color-stamp-400: #c65a52;
-  --color-stamp-500: #b23a34;
-  --color-stamp-600: #8f2a26;
+  /* brass = a single sparing gold accent — the one "treasure" touch amid the
+     moss/ember palette. Never a base UI color; reserved for the rare CTA
+     inside a dark canvas card. */
+  --color-brass-500: #c99a3e;
 
-  /* aurora = dashboard accent dots for the activity ledger (dashboard-only). */
-  --color-aurora-blue: #3d5a80;
-  --color-aurora-violet: #6b5b95;
-  --color-aurora-pink: #b23a34;
+  /* stamp = oxblood, used sparingly for streaks/urgency only. */
+  --color-stamp-400: #b8654f;
+  --color-stamp-500: #8b3a34;
+  --color-stamp-600: #6e2d28;
+
+  /* aurora = dashboard accent dots for the activity feed (dashboard-only). */
+  --color-aurora-blue: #4c6b8a;
+  --color-aurora-violet: #6b5b7e;
+  --color-aurora-pink: #8b3a34;
 
   /* Layered elevation — replaces flat `shadow-sm` where a surface needs to lift. */
   --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px -14px rgba(15, 23, 42, 0.12);
-  --shadow-elevated: 0 24px 48px -20px rgba(16, 27, 46, 0.45), 0 8px 20px -10px rgba(15, 23, 42, 0.16);
+  --shadow-elevated: 0 24px 48px -20px rgba(29, 39, 23, 0.45), 0 8px 20px -10px rgba(15, 23, 42, 0.16);
 }
 
 @layer base {
@@ -64,9 +71,11 @@
 }
 
 /* ------------------------------------------------------------------ *
- * Achievement medals — a milled coin edge (repeating-conic-gradient)  *
- * standing in for the generic "icon in a colored circle" badge.       *
- * Locked = flat pewter ghost. Unlocked = gold disc with a shine sweep. *
+ * Medals & rank badge — a stitched patch edge (repeating-conic-       *
+ * gradient) standing in for the generic "icon in a colored circle"    *
+ * badge. Locked = flat pewter ghost. Unlocked = ember disc with a     *
+ * shine sweep. The player card's level badge reuses this same visual  *
+ * language, so "your rank" and "your achievements" read as one family.*
  * ------------------------------------------------------------------ */
 @layer components {
   .medal-ring {
@@ -121,45 +130,31 @@
     transform: translateX(120%);
   }
 
-  .xp-ring {
-    transition: stroke-dashoffset 0.6s ease;
-  }
-
-  /* Fine engraved hatch on the ink-navy dossier card — a certificate/banknote
-     guilloché standing in for the generic blurred gradient blob. */
-  .ledger-card {
+  /* Topographic contour lines on the dark canvas card — a trail map standing
+     in for the generic blurred gradient blob or an engraved-hatch texture. */
+  .canvas-card {
     position: relative;
     overflow: hidden;
   }
 
-  .ledger-card::before {
+  .canvas-card::before {
     content: '';
     position: absolute;
     inset: 0;
     opacity: 0.05;
-    background-image: repeating-linear-gradient(
-      135deg,
-      white 0px,
-      white 1px,
-      transparent 1px,
-      transparent 11px
+    background-image: repeating-radial-gradient(
+      circle at 18% 22%,
+      transparent 0,
+      transparent 22px,
+      white 23px,
+      white 24px
     );
     pointer-events: none;
-  }
-
-  /* The rank/level badge — a pressed wax seal, not a thin progress ring. */
-  .seal-disc {
-    background: radial-gradient(circle at 32% 26%, theme(--color-xp-400), theme(--color-xp-600));
-    box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.4),
-      inset 0 -8px 12px rgba(0, 0, 0, 0.3),
-      0 8px 16px -6px rgba(0, 0, 0, 0.4);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .medal-disc--unlocked::after,
-  .xp-ring {
+  .medal-disc--unlocked::after {
     transition: none;
   }
 }

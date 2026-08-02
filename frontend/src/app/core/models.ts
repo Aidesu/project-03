@@ -3,7 +3,8 @@
 export type Role = 'USER' | 'ADMIN';
 
 export interface User {
-  id: number;
+  /** Opaque server-side identifier (uuid) — never a sequential number. */
+  id: string;
   email: string;
   name: string | null;
   avatarUrl: string | null;
@@ -13,8 +14,6 @@ export interface User {
 }
 
 export interface UserSettings {
-  id: string;
-  userId: number;
   locale: string;
   timezone: string;
   weeklyApplicationGoal: number;

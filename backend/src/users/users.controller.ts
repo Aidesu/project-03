@@ -53,12 +53,26 @@ const avatarInterceptor = FileInterceptor('avatar', {
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Patch('me')
   async updateAccount(
     @CurrentUser('sub') userId: number,
     @Body() dto: UpdateAccountDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return { user: await this.users.updateAccount(userId, dto) };
+    const { user, tokens } = await this.users.updateAccount(
+      userId,
+      dto,
+      refreshContext(req),
+    );
+    // Present only on an email change, which revoked every session including
+    // this one — hand this device a replacement instead of logging it out.
+    if (tokens) {
+      setAccessCookie(res, tokens.accessToken);
+      setRefreshCookie(res, tokens.refreshToken);
+    }
+    return { user };
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })

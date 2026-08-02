@@ -1,10 +1,15 @@
-import { createHash } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RefreshTokenError, TokenService } from './token.service';
 
-const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
+const REFRESH_SECRET = 'test-refresh-secret';
+
+// Mirrors TokenService.hashToken: keyed, so a database dump alone can't be
+// used to craft a session row for a chosen token.
+const hashed = (s: string) =>
+  createHmac('sha256', REFRESH_SECRET).update(s).digest('hex');
 
 describe('TokenService', () => {
   let prisma: {
@@ -20,6 +25,7 @@ describe('TokenService', () => {
 
   beforeAll(() => {
     process.env.JWT_ACCESS_SECRET = 'test-access-secret';
+    process.env.JWT_REFRESH_SECRET = REFRESH_SECRET;
     process.env.ACCESS_TOKEN_TTL = '15m';
     process.env.REFRESH_TOKEN_TTL_DAYS = '7';
   });
@@ -65,14 +71,47 @@ describe('TokenService', () => {
     );
     await expect(tampered.verifyAccessToken(token)).rejects.toBeDefined();
     process.env.JWT_ACCESS_SECRET = 'test-access-secret';
+    process.env.JWT_REFRESH_SECRET = REFRESH_SECRET;
   });
 
-  it('stores only the sha256 hash of a new refresh token', async () => {
+  // Verification is pinned to HS256 + our issuer/audience. Without the pin a
+  // verifier accepts any algorithm the key shape allows (the classic JWT
+  // confusion attack); without iss/aud a token minted for another service
+  // signed with the same secret would authenticate here.
+  it('rejects an access token signed with a different algorithm', async () => {
+    const jwt = new JwtService({});
+    const forged = await jwt.signAsync(
+      { sub: 1, email: 'a@b.c', role: Role.USER },
+      {
+        secret: 'test-access-secret',
+        algorithm: 'HS512',
+        issuer: 'project-03',
+        audience: 'project-03-api',
+      },
+    );
+    await expect(service.verifyAccessToken(forged)).rejects.toBeDefined();
+  });
+
+  it('rejects an access token minted for a different audience or issuer', async () => {
+    const jwt = new JwtService({});
+    for (const claims of [
+      { issuer: 'project-03', audience: 'some-other-api' },
+      { issuer: 'attacker', audience: 'project-03-api' },
+    ]) {
+      const forged = await jwt.signAsync(
+        { sub: 1, email: 'a@b.c', role: Role.USER },
+        { secret: 'test-access-secret', algorithm: 'HS256', ...claims },
+      );
+      await expect(service.verifyAccessToken(forged)).rejects.toBeDefined();
+    }
+  });
+
+  it('stores only a keyed hash of a new refresh token, never the token', async () => {
     const raw = await service.issueRefreshSession(42, { ip: '1.2.3.4' });
     expect(prisma.refreshSession.create).toHaveBeenCalledTimes(1);
     const { data } = prisma.refreshSession.create.mock.calls[0][0];
     expect(data.userId).toBe(42);
-    expect(data.tokenHash).toBe(sha256(raw));
+    expect(data.tokenHash).toBe(hashed(raw));
     expect(data.tokenHash).not.toContain(raw);
   });
 
@@ -95,7 +134,7 @@ describe('TokenService', () => {
     );
     const created = prisma.refreshSession.create.mock.calls.at(-1)[0].data;
     expect(created.familyId).toBe('fam-1');
-    expect(created.tokenHash).toBe(sha256(result.token));
+    expect(created.tokenHash).toBe(hashed(result.token));
   });
 
   it('detects reuse of a revoked token and burns the whole family', async () => {

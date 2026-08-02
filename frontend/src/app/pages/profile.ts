@@ -10,6 +10,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { initialsOf } from '../core/initials';
 import {
   ChangePasswordInput,
   DeleteAccountInput,
@@ -49,12 +50,7 @@ export class Profile {
   readonly user = this.auth.user;
   readonly deleteConfirmationText = DELETE_CONFIRMATION_TEXT;
 
-  readonly initials = computed(() => {
-    const u = this.user();
-    if (!u) return '?';
-    const source = u.name?.trim() || u.email;
-    return source.slice(0, 2).toUpperCase();
-  });
+  readonly initials = computed(() => initialsOf(this.user()?.name || this.user()?.email));
 
   readonly locales = [
     { value: 'fr', label: 'Français' },

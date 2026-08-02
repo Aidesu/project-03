@@ -1,8 +1,15 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+// Pinned so a token can only ever be validated under the algorithm we sign
+// with. Left open, a verifier will accept any algorithm the key shape allows,
+// which is the root of the classic JWT confusion attacks.
+const JWT_ALGORITHM = 'HS256' as const;
+const JWT_ISSUER = 'project-03';
+const JWT_AUDIENCE = 'project-03-api';
 
 export interface AccessTokenPayload {
   sub: number;
@@ -21,6 +28,7 @@ export class RefreshTokenError extends Error {}
 @Injectable()
 export class TokenService {
   private readonly accessSecret = process.env.JWT_ACCESS_SECRET as string;
+  private readonly refreshSecret = process.env.JWT_REFRESH_SECRET as string;
   private readonly accessTtl = process.env.ACCESS_TOKEN_TTL ?? '15m';
   private readonly refreshTtlDays = Number(
     process.env.REFRESH_TOKEN_TTL_DAYS ?? 7,
@@ -36,6 +44,9 @@ export class TokenService {
   issueAccessToken(payload: AccessTokenPayload): Promise<string> {
     return this.jwt.signAsync(payload, {
       secret: this.accessSecret,
+      algorithm: JWT_ALGORITHM,
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
       expiresIn: this.accessTtl as JwtSignOptions['expiresIn'],
     });
   }
@@ -43,13 +54,23 @@ export class TokenService {
   verifyAccessToken(token: string): Promise<AccessTokenPayload> {
     return this.jwt.verifyAsync<AccessTokenPayload>(token, {
       secret: this.accessSecret,
+      algorithms: [JWT_ALGORITHM],
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
     });
   }
 
   // --- Refresh tokens (opaque, stored hashed, rotating) ---
 
+  /**
+   * Keyed hash, not a bare digest. The token itself is 256 bits of entropy so
+   * a plain SHA-256 would already be preimage-safe; the key buys something
+   * else — an attacker with write access to the database (SQL injection, a
+   * restored backup) still cannot mint a session row matching a token they
+   * chose, because the key never lives in the database.
+   */
   private hashToken(raw: string): string {
-    return createHash('sha256').update(raw).digest('hex');
+    return createHmac('sha256', this.refreshSecret).update(raw).digest('hex');
   }
 
   private refreshExpiry(): Date {

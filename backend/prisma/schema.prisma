@@ -145,7 +145,16 @@ enum XpReason {
 // =====================================================================
 
 model User {
-  id           Int      @id @default(autoincrement())
+  // Internal surrogate key. Never leaves the process: it is what the 13
+  // owning tables reference, so it stays a compact integer. Anything a client
+  // can see uses `publicId` instead.
+  id Int @id @default(autoincrement())
+
+  // The only user identifier the API ever emits. Opaque and non-sequential,
+  // so a client cannot infer how many accounts exist, and any future route
+  // that takes a user identifier is not enumerable by construction.
+  publicId String @unique @default(uuid())
+
   email            String   @unique
   name             String?
   passwordHash     String // argon2id hash — never returned to clients

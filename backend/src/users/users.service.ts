@@ -20,8 +20,16 @@ import { UpdateSettingsDto } from './dto/update-settings.dto';
 const AVATAR_MAX_DIMENSION = 512;
 const AVATAR_PRESIGN_TTL_SECONDS = 300;
 
-/** A user safe to expose over the API (password hash and storage key stripped). */
-export type SafeUser = Omit<User, 'passwordHash' | 'avatarStorageKey'> & {
+/**
+ * A user safe to expose over the API. `id` is deliberately the opaque
+ * `publicId`, never the sequential primary key — that one stays internal, so
+ * a client can neither count accounts nor guess a neighbour's identifier.
+ */
+export type SafeUser = Omit<
+  User,
+  'id' | 'publicId' | 'passwordHash' | 'avatarStorageKey'
+> & {
+  id: string;
   avatarUrl: string | null;
 };
 
@@ -34,13 +42,31 @@ export function toSafeUser(
   avatarUrl: string | null = null,
 ): SafeUser {
   return {
-    id: user.id,
+    id: user.publicId,
     email: user.email,
     name: user.name,
     role: user.role,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     avatarUrl,
+  };
+}
+
+/**
+ * Settings as returned to the client: the row's own uuid and the internal
+ * `userId` foreign key are both dropped — the caller is the owner by
+ * construction, so neither tells them anything they need.
+ */
+export type SafeUserSettings = Omit<UserSettings, 'id' | 'userId'>;
+
+export function toSafeSettings(settings: UserSettings): SafeUserSettings {
+  return {
+    locale: settings.locale,
+    timezone: settings.timezone,
+    weeklyApplicationGoal: settings.weeklyApplicationGoal,
+    emailRemindersEnabled: settings.emailRemindersEnabled,
+    createdAt: settings.createdAt,
+    updatedAt: settings.updatedAt,
   };
 }
 
@@ -80,10 +106,20 @@ export class UsersService {
     return toSafeUser(user, avatarUrl);
   }
 
+  /**
+   * Returns fresh tokens only when the email changed: the recovery address is
+   * the root of account takeover, so that change forces every existing session
+   * to die and re-opens one for the device that just proved it knows the
+   * password — same reasoning as changePassword().
+   */
   async updateAccount(
     userId: number,
     dto: UpdateAccountDto,
-  ): Promise<SafeUser> {
+    ctx: RefreshContext,
+  ): Promise<{
+    user: SafeUser;
+    tokens: { accessToken: string; refreshToken: string } | null;
+  }> {
     const user = await this.requireUser(userId);
 
     const data: { name?: string | null; email?: string } = {};
@@ -92,11 +128,12 @@ export class UsersService {
       data.name = dto.name.length > 0 ? dto.name : null;
     }
 
-    if (dto.email !== undefined && dto.email !== user.email) {
+    const emailChanged = dto.email !== undefined && dto.email !== user.email;
+    if (emailChanged) {
       // currentPassword presence is enforced by UpdateAccountDto's @ValidateIf.
       await this.assertPassword(user, dto.currentPassword as string);
 
-      const existing = await this.findByEmail(dto.email);
+      const existing = await this.findByEmail(dto.email as string);
       if (existing && existing.id !== userId) {
         throw new ConflictException('Email already registered');
       }
@@ -107,7 +144,22 @@ export class UsersService {
       where: { id: userId },
       data,
     });
-    return this.presentUser(updated);
+
+    if (!emailChanged) {
+      return { user: await this.presentUser(updated), tokens: null };
+    }
+
+    await this.tokens.revokeAllSessionsForUser(userId);
+    const accessToken = await this.tokens.issueAccessToken({
+      sub: updated.id,
+      email: updated.email,
+      role: updated.role,
+    });
+    const refreshToken = await this.tokens.issueRefreshSession(updated.id, ctx);
+    return {
+      user: await this.presentUser(updated),
+      tokens: { accessToken, refreshToken },
+    };
   }
 
   async changePassword(
@@ -212,23 +264,25 @@ export class UsersService {
     }
   }
 
-  async getSettings(userId: number): Promise<UserSettings> {
-    return this.prisma.userSettings.upsert({
+  async getSettings(userId: number): Promise<SafeUserSettings> {
+    const settings = await this.prisma.userSettings.upsert({
       where: { userId },
       create: { userId },
       update: {},
     });
+    return toSafeSettings(settings);
   }
 
   async updateSettings(
     userId: number,
     dto: UpdateSettingsDto,
-  ): Promise<UserSettings> {
-    return this.prisma.userSettings.upsert({
+  ): Promise<SafeUserSettings> {
+    const settings = await this.prisma.userSettings.upsert({
       where: { userId },
       create: { userId, ...dto },
       update: { ...dto },
     });
+    return toSafeSettings(settings);
   }
 
   private async requireUser(userId: number): Promise<User> {

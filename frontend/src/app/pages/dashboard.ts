@@ -8,11 +8,12 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { ApplicationsService } from '../core/applications.service';
 import { AuthService } from '../core/auth.service';
 import { GamificationService } from '../core/gamification.service';
+import { initialsOf } from '../core/initials';
 import { DailyApplicationStat, GamificationProfile } from '../core/models';
+import { PlayerCard } from '../shared/player-card/player-card';
 
 const XP_REASON_LABEL: Record<string, string> = {
   APPLICATION_CREATED: 'Candidature ajoutée',
@@ -47,9 +48,9 @@ const XP_REASON_ACCENT: Record<string, string> = {
 const HEATMAP_WEEKS = 12;
 const HEATMAP_DAYS = HEATMAP_WEEKS * 7;
 
-// One CSS color class per activity level (0 = none) — ink density rising to a
-// gold "stamped" peak on the busiest days, echoing the seal/medal palette.
-const HEAT_LEVEL_CLASS = ['bg-slate-100', 'bg-[#C9D5E8]', 'bg-[#8FA3C0]', 'bg-brand-500', 'bg-xp-500'];
+// One CSS color class per activity level (0 = none) — moss density rising to
+// an ember peak on the busiest days, echoing the badge/medal palette.
+const HEAT_LEVEL_CLASS = ['bg-slate-100', 'bg-brand-200', 'bg-brand-400', 'bg-brand-600', 'bg-xp-500'];
 
 function heatLevel(count: number): number {
   if (count <= 0) return 0;
@@ -124,7 +125,7 @@ interface ChartPoint {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink],
+  imports: [PlayerCard],
   templateUrl: './dashboard.html',
 })
 export class Dashboard implements AfterViewInit, OnDestroy {
@@ -156,13 +157,6 @@ export class Dashboard implements AfterViewInit, OnDestroy {
   readonly tooltipWidth = 116;
   readonly tooltipHeight = 34;
 
-  /** Fill % of the ledger progress bar toward the next rank. */
-  readonly ringPct = computed(() => {
-    const p = this.profile();
-    if (!p || p.xpForNextLevel === 0) return 0;
-    return Math.min(100, Math.round((p.xpIntoLevel / p.xpForNextLevel) * 100));
-  });
-
   /** Last 7 days as a punch-card row (true = at least one application that day). */
   readonly streakPunches = computed(() => {
     const stats = this.chartStats();
@@ -176,12 +170,11 @@ export class Dashboard implements AfterViewInit, OnDestroy {
     return base.split(/[@\s]/)[0];
   });
 
-  readonly initials = computed(() => {
-    const u = this.user();
-    if (!u) return '?';
-    const source = u.name?.trim() || u.email;
-    return source.slice(0, 2).toUpperCase();
-  });
+  readonly greeting = computed(() => `Salut ${this.firstName()} 👋`);
+
+  readonly displayName = computed(() => this.user()?.name?.trim() || this.user()?.email || '');
+
+  readonly initials = computed(() => initialsOf(this.user()?.name || this.user()?.email));
 
   readonly avatarUrl = computed(() => this.user()?.avatarUrl ?? null);
 

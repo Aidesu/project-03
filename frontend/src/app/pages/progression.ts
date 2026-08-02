@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { AuthService } from '../core/auth.service';
 import {
   ACHIEVEMENT_CATEGORY_ORDER,
   AchievementCategory,
@@ -6,8 +7,9 @@ import {
   toRoman,
 } from '../core/enums';
 import { GamificationService } from '../core/gamification.service';
+import { initialsOf } from '../core/initials';
 import { Achievement, GamificationProfile } from '../core/models';
-import { RING_CIRCUMFERENCE, ringOffset } from '../core/xp-ring';
+import { PlayerCard } from '../shared/player-card/player-card';
 
 interface RankedAchievement extends Achievement {
   tier: string;
@@ -20,25 +22,22 @@ interface AchievementGroup {
 
 @Component({
   selector: 'app-progression',
+  imports: [PlayerCard],
   templateUrl: './progression.html',
 })
 export class Progression {
   private readonly gamification = inject(GamificationService);
+  private readonly auth = inject(AuthService);
 
+  readonly user = this.auth.user;
   readonly profile = signal<GamificationProfile | null>(null);
   readonly achievements = signal<Achievement[] | null>(null);
   readonly loading = signal(true);
   readonly error = signal(false);
 
-  readonly ringPct = computed(() => {
-    const p = this.profile();
-    if (!p || p.xpForNextLevel === 0) return 0;
-    return Math.min(100, Math.round((p.xpIntoLevel / p.xpForNextLevel) * 100));
-  });
-
-  readonly ringOffsetValue = computed(() => ringOffset(this.ringPct(), RING_CIRCUMFERENCE));
-
-  readonly ringCircumference = RING_CIRCUMFERENCE;
+  readonly displayName = computed(() => this.user()?.name?.trim() || this.user()?.email || '');
+  readonly avatarUrl = computed(() => this.user()?.avatarUrl ?? null);
+  readonly initials = computed(() => initialsOf(this.user()?.name || this.user()?.email));
 
   readonly unlockedCount = computed(
     () => this.achievements()?.filter((a) => a.unlockedAt).length ?? 0,
