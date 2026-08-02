@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { JwtService } from '@nestjs/jwt';
-import { Role } from '@prisma/client';
+import { AuditAction, Role } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RefreshTokenError, TokenService } from './token.service';
 
@@ -21,6 +22,7 @@ describe('TokenService', () => {
     };
     $transaction: jest.Mock;
   };
+  let audit: { success: jest.Mock; failure: jest.Mock };
   let service: TokenService;
 
   beforeAll(() => {
@@ -40,9 +42,14 @@ describe('TokenService', () => {
       },
       $transaction: jest.fn().mockResolvedValue([]),
     };
+    audit = {
+      success: jest.fn().mockResolvedValue(undefined),
+      failure: jest.fn().mockResolvedValue(undefined),
+    };
     service = new TokenService(
       new JwtService({}),
       prisma as unknown as PrismaService,
+      audit as unknown as AuditService,
     );
   });
 
@@ -68,6 +75,7 @@ describe('TokenService', () => {
     const tampered = new TokenService(
       new JwtService({}),
       prisma as unknown as PrismaService,
+      audit as unknown as AuditService,
     );
     await expect(tampered.verifyAccessToken(token)).rejects.toBeDefined();
     process.env.JWT_ACCESS_SECRET = 'test-access-secret';
@@ -152,6 +160,15 @@ describe('TokenService', () => {
     expect(prisma.refreshSession.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { familyId: 'fam-1', revokedAt: null },
+      }),
+    );
+    // A replayed token means it left the device it was issued to — the one
+    // event in this file that has to survive in the audit trail.
+    expect(audit.failure).toHaveBeenCalledWith(
+      AuditAction.REFRESH_TOKEN_REUSE_DETECTED,
+      expect.objectContaining({
+        userId: 7,
+        metadata: { familyId: 'fam-1', sessionsRevoked: 1 },
       }),
     );
   });

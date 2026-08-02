@@ -515,6 +515,14 @@ export const es: Record<TranslationKey, string> = {
   'profile.settings.loadError': 'No se han podido cargar los ajustes.',
   'profile.settings.saveError':
     'No se han podido guardar los ajustes. Inténtalo de nuevo.',
+  'profile.privacy.title': 'Tus datos',
+  'profile.privacy.body':
+    'Descarga todo lo que contiene esta cuenta — candidaturas, empresas, contactos, recordatorios, plantillas, progreso e historial de seguridad — en un único archivo JSON. Solicitar una copia no borra nada.',
+  'profile.privacy.export': 'Descargar mis datos',
+  'profile.privacy.exporting': 'Preparando tu archivo…',
+  'profile.privacy.error': 'No se pudo preparar tu exportación. Inténtalo de nuevo.',
+  'profile.privacy.tooMany':
+    'Demasiadas exportaciones solicitadas. Espera un momento antes de volver a intentarlo.',
   'profile.danger.title': 'Zona de peligro',
   'profile.danger.body':
     'Esta acción elimina definitivamente tu cuenta y todos los datos asociados (candidaturas, empresas, documentos, plantillas de correo, progreso). Es irreversible.',

@@ -69,4 +69,13 @@ export class ProfileService {
   deleteAccount(input: DeleteAccountInput): Observable<void> {
     return this.http.post<void>(`${this.base}/delete`, input);
   }
+
+  /**
+   * GDPR export. Read as a blob rather than parsed JSON: the file is handed
+   * straight to the browser, and re-serializing it here would only risk the
+   * download differing from what the server actually produced.
+   */
+  exportData(): Observable<Blob> {
+    return this.http.get(`${this.base}/export`, { responseType: 'blob' });
+  }
 }

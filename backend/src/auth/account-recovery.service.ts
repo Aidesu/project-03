@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { hash } from '@node-rs/argon2';
-import { User, VerificationTokenPurpose } from '@prisma/client';
+import { AuditAction, User, VerificationTokenPurpose } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
+import type { RequestContext } from '../common/request-context';
 import {
   emailVerificationMail,
   passwordResetMail,
@@ -35,6 +37,7 @@ export class AccountRecoveryService {
     private readonly tokens: VerificationTokenService,
     private readonly sessions: TokenService,
     private readonly mail: MailService,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -42,10 +45,17 @@ export class AccountRecoveryService {
    * address has an account is not something an unauthenticated caller gets to
    * learn, so the controller answers 204 in every case.
    */
-  async requestPasswordReset(email: string): Promise<void> {
+  async requestPasswordReset(
+    email: string,
+    ctx: RequestContext = {},
+  ): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       this.logger.log('Password reset requested for an unknown address');
+      await this.audit.failure(AuditAction.PASSWORD_RESET_REQUESTED, {
+        context: ctx,
+        metadata: { reason: 'unknown_account' },
+      });
       return;
     }
 
@@ -64,6 +74,10 @@ export class AccountRecoveryService {
         PASSWORD_RESET_TTL_MINUTES,
       ),
     );
+    await this.audit.success(AuditAction.PASSWORD_RESET_REQUESTED, {
+      userId: user.id,
+      context: ctx,
+    });
     this.logger.log(`Password reset requested for user ${user.id}`);
   }
 
@@ -71,12 +85,22 @@ export class AccountRecoveryService {
    * Finish a reset: set the new password and drop every existing session, since
    * whoever forced the reset may be holding one.
    */
-  async resetPassword(token: string, newPassword: string): Promise<void> {
+  async resetPassword(
+    token: string,
+    newPassword: string,
+    ctx: RequestContext = {},
+  ): Promise<void> {
     const consumed = await this.tokens.consume(
       token,
       VerificationTokenPurpose.PASSWORD_RESET,
     );
-    if (!consumed) throw new BadRequestException(INVALID_LINK);
+    if (!consumed) {
+      await this.audit.failure(AuditAction.PASSWORD_RESET_COMPLETED, {
+        context: ctx,
+        metadata: { reason: 'invalid_token' },
+      });
+      throw new BadRequestException(INVALID_LINK);
+    }
 
     const user = await this.prisma.user.findUnique({
       where: { id: consumed.userId },
@@ -84,6 +108,11 @@ export class AccountRecoveryService {
     // The address moved after the link was sent: the mail landed in an inbox
     // the account no longer belongs to, so the link is void.
     if (!user || user.email !== consumed.email) {
+      await this.audit.failure(AuditAction.PASSWORD_RESET_COMPLETED, {
+        userId: consumed.userId,
+        context: ctx,
+        metadata: { reason: 'address_changed' },
+      });
       throw new BadRequestException(INVALID_LINK);
     }
 
@@ -98,18 +127,23 @@ export class AccountRecoveryService {
     });
 
     await this.sessions.revokeAllSessionsForUser(user.id);
+    await this.audit.success(AuditAction.PASSWORD_RESET_COMPLETED, {
+      userId: user.id,
+      context: ctx,
+    });
     this.logger.log(`Password reset completed for user ${user.id}`);
   }
 
   /**
    * Send (or re-send) the verification link. No-op on an already-verified
-   * address. `preferredLocale` covers signup, where no settings row exists yet
+   * address. `options.locale` covers signup, where no settings row exists yet
    * and the only clue is the language the form was rendered in.
    */
   async sendEmailVerification(
     user: Pick<User, 'id' | 'email'>,
-    preferredLocale?: string,
+    options: { locale?: string; context?: RequestContext } = {},
   ): Promise<void> {
+    const { locale: preferredLocale, context: ctx = {} } = options;
     const current = await this.prisma.user.findUnique({
       where: { id: user.id },
       select: { email: true, emailVerifiedAt: true },
@@ -133,20 +167,35 @@ export class AccountRecoveryService {
         EMAIL_VERIFICATION_TTL_HOURS,
       ),
     );
+    await this.audit.success(AuditAction.EMAIL_VERIFICATION_SENT, {
+      userId: user.id,
+      context: ctx,
+    });
   }
 
-  async verifyEmail(token: string): Promise<void> {
+  async verifyEmail(token: string, ctx: RequestContext = {}): Promise<void> {
     const consumed = await this.tokens.consume(
       token,
       VerificationTokenPurpose.EMAIL_VERIFICATION,
     );
-    if (!consumed) throw new BadRequestException(INVALID_LINK);
+    if (!consumed) {
+      await this.audit.failure(AuditAction.EMAIL_VERIFIED, {
+        context: ctx,
+        metadata: { reason: 'invalid_token' },
+      });
+      throw new BadRequestException(INVALID_LINK);
+    }
 
     const user = await this.prisma.user.findUnique({
       where: { id: consumed.userId },
       select: { id: true, email: true, emailVerifiedAt: true },
     });
     if (!user || user.email !== consumed.email) {
+      await this.audit.failure(AuditAction.EMAIL_VERIFIED, {
+        userId: consumed.userId,
+        context: ctx,
+        metadata: { reason: 'address_changed' },
+      });
       throw new BadRequestException(INVALID_LINK);
     }
     if (user.emailVerifiedAt) return;
@@ -154,6 +203,10 @@ export class AccountRecoveryService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: { emailVerifiedAt: new Date() },
+    });
+    await this.audit.success(AuditAction.EMAIL_VERIFIED, {
+      userId: user.id,
+      context: ctx,
     });
     this.logger.log(`E-mail verified for user ${user.id}`);
   }

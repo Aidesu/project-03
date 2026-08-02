@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
-import { VerificationTokenPurpose } from '@prisma/client';
+import { AuditAction, VerificationTokenPurpose } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountRecoveryService } from './account-recovery.service';
@@ -25,6 +26,7 @@ describe('AccountRecoveryService', () => {
   let tokens: { issue: jest.Mock; consume: jest.Mock };
   let sessions: { revokeAllSessionsForUser: jest.Mock };
   let mail: { send: jest.Mock };
+  let audit: { success: jest.Mock; failure: jest.Mock };
   let service: AccountRecoveryService;
 
   beforeEach(() => {
@@ -41,11 +43,16 @@ describe('AccountRecoveryService', () => {
     };
     sessions = { revokeAllSessionsForUser: jest.fn() };
     mail = { send: jest.fn().mockResolvedValue(undefined) };
+    audit = {
+      success: jest.fn().mockResolvedValue(undefined),
+      failure: jest.fn().mockResolvedValue(undefined),
+    };
     service = new AccountRecoveryService(
       prisma as unknown as PrismaService,
       tokens as unknown as VerificationTokenService,
       sessions as unknown as TokenService,
       mail as unknown as MailService,
+      audit as unknown as AuditService,
     );
   });
 
@@ -206,7 +213,10 @@ describe('AccountRecoveryService', () => {
       prisma.user.findUnique.mockResolvedValue(buildUser());
       prisma.userSettings.findUnique.mockResolvedValue(null);
 
-      await service.sendEmailVerification({ id: USER_ID, email: EMAIL }, 'es');
+      await service.sendEmailVerification(
+        { id: USER_ID, email: EMAIL },
+        { locale: 'es' },
+      );
 
       expect(mail.send.mock.calls[0][0].subject).toBe(
         'Confirma tu dirección de correo',
@@ -222,6 +232,63 @@ describe('AccountRecoveryService', () => {
 
       expect(mail.send.mock.calls[0][0].subject).toBe(
         'Confirmez votre adresse e-mail',
+      );
+    });
+  });
+
+  describe('audit trail', () => {
+    it('records a reset request on an unknown address without the address', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await service.requestPasswordReset('ghost@example.com', {
+        ip: '9.9.9.9',
+      });
+
+      const [action, options] = audit.failure.mock.calls[0] as [
+        AuditAction,
+        Record<string, unknown>,
+      ];
+      expect(action).toBe(AuditAction.PASSWORD_RESET_REQUESTED);
+      expect(options.userId).toBeUndefined();
+      expect(JSON.stringify(options)).not.toContain('ghost@example.com');
+    });
+
+    it('records a completed reset against the account', async () => {
+      tokens.consume.mockResolvedValue({ userId: USER_ID, email: EMAIL });
+      prisma.user.findUnique.mockResolvedValue(buildUser());
+
+      await service.resetPassword(RAW_TOKEN, 'new-password-1234', {
+        ip: '9.9.9.9',
+      });
+
+      expect(audit.success).toHaveBeenCalledWith(
+        AuditAction.PASSWORD_RESET_COMPLETED,
+        { userId: USER_ID, context: { ip: '9.9.9.9' } },
+      );
+    });
+
+    it('records a spent or forged reset link', async () => {
+      tokens.consume.mockResolvedValue(null);
+
+      await expect(
+        service.resetPassword('bad-token', 'new-password-1234'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(audit.failure).toHaveBeenCalledWith(
+        AuditAction.PASSWORD_RESET_COMPLETED,
+        expect.objectContaining({ metadata: { reason: 'invalid_token' } }),
+      );
+    });
+
+    it('records a verified address', async () => {
+      tokens.consume.mockResolvedValue({ userId: USER_ID, email: EMAIL });
+      prisma.user.findUnique.mockResolvedValue(buildUser());
+
+      await service.verifyEmail(RAW_TOKEN);
+
+      expect(audit.success).toHaveBeenCalledWith(
+        AuditAction.EMAIL_VERIFIED,
+        expect.objectContaining({ userId: USER_ID }),
       );
     });
   });

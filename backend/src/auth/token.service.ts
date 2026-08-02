@@ -1,7 +1,9 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
-import { Role } from '@prisma/client';
+import { AuditAction, Role } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
+import type { RequestContext } from '../common/request-context';
 import { PrismaService } from '../prisma/prisma.service';
 
 // Pinned so a token can only ever be validated under the algorithm we sign
@@ -15,11 +17,6 @@ export interface AccessTokenPayload {
   sub: number;
   email: string;
   role: Role;
-}
-
-export interface RefreshContext {
-  userAgent?: string | null;
-  ip?: string | null;
 }
 
 /** Domain error for any refresh-token failure (mapped to 401 by the caller). */
@@ -37,6 +34,7 @@ export class TokenService {
   constructor(
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
   ) {}
 
   // --- Access tokens (stateless JWT) ---
@@ -84,7 +82,7 @@ export class TokenService {
   /** Start a brand-new session (login/register) — opens a fresh rotation family. */
   async issueRefreshSession(
     userId: number,
-    ctx: RefreshContext = {},
+    ctx: RequestContext = {},
   ): Promise<string> {
     const token = this.generateRawToken();
     await this.prisma.refreshSession.create({
@@ -107,7 +105,7 @@ export class TokenService {
    */
   async rotateRefreshSession(
     rawToken: string,
-    ctx: RefreshContext = {},
+    ctx: RequestContext = {},
   ): Promise<{ token: string; userId: number }> {
     const tokenHash = this.hashToken(rawToken);
     const session = await this.prisma.refreshSession.findFirst({
@@ -118,9 +116,16 @@ export class TokenService {
 
     if (session.revokedAt) {
       // Replay of a rotated/revoked token → likely theft: burn the family.
-      await this.prisma.refreshSession.updateMany({
+      const { count } = await this.prisma.refreshSession.updateMany({
         where: { familyId: session.familyId, revokedAt: null },
         data: { revokedAt: new Date() },
+      });
+      // The one event in this file worth a permanent record: it means a token
+      // left the device it was issued to.
+      await this.audit.failure(AuditAction.REFRESH_TOKEN_REUSE_DETECTED, {
+        userId: session.userId,
+        context: ctx,
+        metadata: { familyId: session.familyId, sessionsRevoked: count },
       });
       throw new RefreshTokenError('Refresh token reuse detected');
     }

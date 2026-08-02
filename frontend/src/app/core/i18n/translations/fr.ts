@@ -508,6 +508,14 @@ export const fr: Record<TranslationKey, string> = {
   'profile.settings.success': 'Paramètres enregistrés.',
   'profile.settings.loadError': 'Impossible de charger les paramètres.',
   'profile.settings.saveError': 'Impossible d’enregistrer les paramètres. Réessaie.',
+  'profile.privacy.title': 'Vos données',
+  'profile.privacy.body':
+    'Téléchargez tout ce que ce compte contient — candidatures, entreprises, contacts, rappels, modèles, progression et historique de sécurité — dans un seul fichier JSON. Demander une copie ne supprime rien.',
+  'profile.privacy.export': 'Télécharger mes données',
+  'profile.privacy.exporting': 'Préparation de votre fichier…',
+  'profile.privacy.error': 'Votre export n’a pas pu être préparé. Veuillez réessayer.',
+  'profile.privacy.tooMany':
+    'Trop d’exports demandés. Patientez un instant avant de réessayer.',
   'profile.danger.title': 'Zone de danger',
   'profile.danger.body':
     'Cette action supprime définitivement ton compte et toutes les données associées (candidatures, entreprises, documents, modèles d’email, progression). Cette action est irréversible.',

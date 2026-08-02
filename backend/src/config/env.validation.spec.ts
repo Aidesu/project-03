@@ -88,6 +88,22 @@ describe('validateEnv', () => {
     ).not.toThrow();
   });
 
+  // The audit trail holds IPs and user agents: an unparseable value here would
+  // silently become NaN and make the nightly purge a no-op, i.e. personal data
+  // kept forever.
+  it('refuses a non-integer or out-of-range audit retention window', () => {
+    for (const days of ['forever', '0', '-1', '3651', '30.5']) {
+      expect(() =>
+        validateEnv({ ...baseProd, AUDIT_LOG_RETENTION_DAYS: days }),
+      ).toThrow(/AUDIT_LOG_RETENTION_DAYS/);
+    }
+    expect(() =>
+      validateEnv({ ...baseProd, AUDIT_LOG_RETENTION_DAYS: '365' }),
+    ).not.toThrow();
+    // Unset is fine — the service falls back to its documented default.
+    expect(() => validateEnv({ ...baseProd })).not.toThrow();
+  });
+
   // Every mailed link is built from APP_URL, and without a relay account
   // recovery fails silently — the one outage a user cannot work around.
   it('refuses a missing or plaintext APP_URL in production', () => {

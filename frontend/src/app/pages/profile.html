@@ -321,6 +321,29 @@
     }
   </section>
 
+  <!-- Privacy: data export -->
+  <section class="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-6 shadow-sm md:p-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">
+      {{ t('profile.privacy.title') }}
+    </h2>
+    <p class="mt-2 max-w-2xl text-sm text-slate-600">{{ t('profile.privacy.body') }}</p>
+
+    @if (exportError(); as key) {
+      <div class="alert alert--error mt-4">{{ t(key) }}</div>
+    }
+
+    <div class="mt-4">
+      <button
+        type="button"
+        (click)="exportData()"
+        [disabled]="exporting()"
+        class="btn btn--secondary"
+      >
+        {{ exporting() ? t('profile.privacy.exporting') : t('profile.privacy.export') }}
+      </button>
+    </div>
+  </section>
+
   <!-- Danger zone -->
   <section class="rounded-2xl border border-rose-200 bg-rose-50/40 dark:border-rose-500/30 dark:bg-rose-500/8 p-6 shadow-sm md:p-8">
     <h2 class="text-sm font-semibold uppercase tracking-wider text-rose-500">

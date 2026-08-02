@@ -6,11 +6,13 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
-import { Role, User, UserSettings } from '@prisma/client';
+import { AuditAction, Role, User, UserSettings } from '@prisma/client';
 import sharp from 'sharp';
+import { AuditService } from '../audit/audit.service';
 import { AccountRecoveryService } from '../auth/account-recovery.service';
 import { ARGON2_OPTIONS } from '../auth/password.util';
-import { RefreshContext, TokenService } from '../auth/token.service';
+import { TokenService } from '../auth/token.service';
+import type { RequestContext } from '../common/request-context';
 import { DEFAULT_TIME_ZONE } from '../common/timezone';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -105,6 +107,7 @@ export class UsersService {
     private readonly storage: StorageService,
     private readonly tokens: TokenService,
     private readonly recovery: AccountRecoveryService,
+    private readonly audit: AuditService,
   ) {}
 
   findById(id: number): Promise<User | null> {
@@ -155,7 +158,7 @@ export class UsersService {
   async updateAccount(
     userId: number,
     dto: UpdateAccountDto,
-    ctx: RefreshContext,
+    ctx: RequestContext,
   ): Promise<{
     user: SafeUser;
     tokens: { accessToken: string; refreshToken: string } | null;
@@ -175,10 +178,18 @@ export class UsersService {
     const emailChanged = dto.email !== undefined && dto.email !== user.email;
     if (emailChanged) {
       // currentPassword presence is enforced by UpdateAccountDto's @ValidateIf.
-      await this.assertPassword(user, dto.currentPassword as string);
+      await this.assertPassword(user, dto.currentPassword as string, {
+        action: AuditAction.EMAIL_CHANGED,
+        ctx,
+      });
 
       const existing = await this.findByEmail(dto.email as string);
       if (existing && existing.id !== userId) {
+        await this.audit.failure(AuditAction.EMAIL_CHANGED, {
+          userId,
+          context: ctx,
+          metadata: { reason: 'email_taken' },
+        });
         throw new ConflictException('Email already registered');
       }
       data.email = dto.email;
@@ -197,9 +208,16 @@ export class UsersService {
       return { user: await this.presentUser(updated), tokens: null };
     }
 
-    await this.recovery.sendEmailVerification(updated);
+    await this.recovery.sendEmailVerification(updated, { context: ctx });
 
     await this.tokens.revokeAllSessionsForUser(userId);
+    // No address on the entry, old or new: the account row already holds the
+    // current one, and copying addresses into an append-only table would put
+    // them beyond the reach of a later erasure request.
+    await this.audit.success(AuditAction.EMAIL_CHANGED, {
+      userId,
+      context: ctx,
+    });
     const accessToken = await this.tokens.issueAccessToken({
       sub: updated.id,
       email: updated.email,
@@ -215,10 +233,13 @@ export class UsersService {
   async changePassword(
     userId: number,
     dto: ChangePasswordDto,
-    ctx: RefreshContext,
+    ctx: RequestContext,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const user = await this.requireUser(userId);
-    await this.assertPassword(user, dto.currentPassword);
+    await this.assertPassword(user, dto.currentPassword, {
+      action: AuditAction.PASSWORD_CHANGED,
+      ctx,
+    });
 
     if (dto.newPassword === dto.currentPassword) {
       throw new BadRequestException(
@@ -236,6 +257,10 @@ export class UsersService {
     // protects it changes — revoke all of them, then open a fresh one for
     // the device that just proved it knows the new password.
     await this.tokens.revokeAllSessionsForUser(userId);
+    await this.audit.success(AuditAction.PASSWORD_CHANGED, {
+      userId,
+      context: ctx,
+    });
     const accessToken = await this.tokens.issueAccessToken({
       sub: user.id,
       email: user.email,
@@ -299,15 +324,28 @@ export class UsersService {
     return this.presentUser(updated);
   }
 
-  async deleteAccount(userId: number, dto: DeleteAccountDto): Promise<void> {
+  async deleteAccount(
+    userId: number,
+    dto: DeleteAccountDto,
+    ctx: RequestContext,
+  ): Promise<void> {
     const user = await this.requireUser(userId);
-    await this.assertPassword(user, dto.currentPassword);
+    await this.assertPassword(user, dto.currentPassword, {
+      action: AuditAction.ACCOUNT_DELETED,
+      ctx,
+    });
 
     const avatarKey = user.avatarStorageKey;
 
     await this.tokens.revokeAllSessionsForUser(userId);
-    // Cascades (schema.prisma) erase every row owned by this user.
+    // Cascades (schema.prisma) erase every row owned by this user. AuditLog is
+    // the one table that survives — it has no foreign key to User precisely so
+    // that this event outlives the account it describes.
     await this.prisma.user.delete({ where: { id: userId } });
+    await this.audit.success(AuditAction.ACCOUNT_DELETED, {
+      userId,
+      context: ctx,
+    });
 
     if (avatarKey) {
       await this.storage.delete(avatarKey).catch(() => undefined);
@@ -341,8 +379,25 @@ export class UsersService {
     return user;
   }
 
-  private async assertPassword(user: User, password: string): Promise<void> {
+  /**
+   * Re-authentication gate in front of the three account changes worth taking
+   * over an account for. The failed attempt is audited under the action it was
+   * gating, so the trail shows what was being attempted, not just that some
+   * password check failed.
+   */
+  private async assertPassword(
+    user: User,
+    password: string,
+    audited: { action: AuditAction; ctx: RequestContext },
+  ): Promise<void> {
     const valid = await verify(user.passwordHash, password).catch(() => false);
-    if (!valid) throw new ForbiddenException('Current password is incorrect.');
+    if (valid) return;
+
+    await this.audit.failure(audited.action, {
+      userId: user.id,
+      context: audited.ctx,
+      metadata: { reason: 'invalid_password' },
+    });
+    throw new ForbiddenException('Current password is incorrect.');
   }
 }

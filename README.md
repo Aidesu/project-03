@@ -112,6 +112,7 @@ pnpm start                    # http://localhost:4200 — proxies /api to localh
 | `REDIS_URL`    | Redis connection string              | see `.env.example`      |
 | `S3_ENDPOINT`  | MinIO/S3 endpoint for attachments    | `http://localhost:9000` |
 | `S3_BUCKET`    | Bucket for uploaded files            | `project03-uploads`     |
+| `AUDIT_LOG_RETENTION_DAYS` | How long audit entries are kept (they hold IPs) | `365` |
 
 ## Authentication
 
@@ -126,6 +127,30 @@ Cookie-based JWT, **secure by default**. Tokens live in httpOnly, SameSite=stric
 - Every route requires a valid access token unless marked `@Public()`. Login/register are
   rate-limited; `helmet` sets security headers.
 
+### Data export (GDPR)
+
+`GET /api/users/me/export` returns everything the product holds for the calling account as one
+JSON document — profile, settings, applications and their status history, interviews, companies,
+contacts, documents, reminders, tags, templates, gamification, sessions and audit entries — read
+in a single transaction so the file is a consistent snapshot. It is rate limited to 3 calls per
+hour and recorded as `DATA_EXPORTED` in the audit trail.
+
+Domain tables are exported whole, so a column added later shows up by default. The two tables
+holding credentials (`User`, `RefreshSession`) are read through an explicit allowlist instead, and
+verification tokens are never exported: a live recovery link in a downloaded file is an account
+takeover waiting to happen.
+
+### Audit trail
+
+Security-relevant events (login success/failure, logout, password change, password reset,
+address change and verification, account deletion, refresh-token replay) are appended to
+`AuditLog` with the actor, the IP, the user agent and the request's correlation id.
+
+The table is **append-only**: a Postgres trigger rejects `UPDATE` outright. `DELETE` stays
+available because it is how retention is applied — a nightly job drops entries older than
+`AUDIT_LOG_RETENTION_DAYS`. No e-mail address is ever copied into an entry; a known account is
+identified by its internal id, an attempt on an unknown address by nothing at all.
+
 ## Domain model
 
 Job-search tracker, fully **per-user isolated**. Core Prisma models (see
@@ -133,7 +158,7 @@ Job-search tracker, fully **per-user isolated**. Core Prisma models (see
 
 | Group         | Models |
 | ------------- | ------ |
-| Identity      | `User`, `UserSettings`, `RefreshSession` |
+| Identity      | `User`, `UserSettings`, `RefreshSession`, `VerificationToken`, `AuditLog` (append-only) |
 | Applications  | `JobApplication` (status, salary, work mode, dates, priority…), `Company`, `Contact` |
 | Pipeline      | `Interview`, `ApplicationStatusEvent` (status history → funnel & timing stats) |
 | Attachments   | `Document` (metadata; bytes in MinIO/S3), `Tag` + `ApplicationTag` |

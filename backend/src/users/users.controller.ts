@@ -16,7 +16,9 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
+import type { CorrelatedRequest } from '../common/correlation-id.middleware';
+import { requestContext } from '../common/request-context';
 import { memoryStorage } from 'multer';
 import {
   clearAuthCookies,
@@ -24,7 +26,7 @@ import {
   setRefreshCookie,
 } from '../auth/cookies';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { refreshContext } from '../auth/refresh-context.util';
+import { DataExportService } from './data-export.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
@@ -51,20 +53,23 @@ const avatarInterceptor = FileInterceptor('avatar', {
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly dataExport: DataExportService,
+  ) {}
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Patch('me')
   async updateAccount(
     @CurrentUser('sub') userId: number,
     @Body() dto: UpdateAccountDto,
-    @Req() req: Request,
+    @Req() req: CorrelatedRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
     const { user, tokens } = await this.users.updateAccount(
       userId,
       dto,
-      refreshContext(req),
+      requestContext(req),
     );
     // Present only on an email change, which revoked every session including
     // this one — hand this device a replacement instead of logging it out.
@@ -81,13 +86,13 @@ export class UsersController {
   async changePassword(
     @CurrentUser('sub') userId: number,
     @Body() dto: ChangePasswordDto,
-    @Req() req: Request,
+    @Req() req: CorrelatedRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     const { accessToken, refreshToken } = await this.users.changePassword(
       userId,
       dto,
-      refreshContext(req),
+      requestContext(req),
     );
     setAccessCookie(res, accessToken);
     setRefreshCookie(res, refreshToken);
@@ -109,6 +114,32 @@ export class UsersController {
     return { user: await this.users.removeAvatar(userId) };
   }
 
+  /**
+   * GDPR access/portability. Rate limited far harder than the rest of the API:
+   * it reads every table this account touches, so it is both the most
+   * expensive endpoint in the product and the one that copies the most
+   * personal data out of it in a single call.
+   */
+  @Throttle({ default: { limit: 3, ttl: 3_600_000 } })
+  @Get('me/export')
+  async exportData(
+    @CurrentUser('sub') userId: number,
+    @Req() req: CorrelatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.dataExport.exportForUser(
+      userId,
+      requestContext(req),
+    );
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="project-03-export-${stamp}.json"`,
+    );
+    return data;
+  }
+
   @Get('me/settings')
   getSettings(@CurrentUser('sub') userId: number) {
     return this.users.getSettings(userId);
@@ -128,9 +159,10 @@ export class UsersController {
   async deleteAccount(
     @CurrentUser('sub') userId: number,
     @Body() dto: DeleteAccountDto,
+    @Req() req: CorrelatedRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.users.deleteAccount(userId, dto);
+    await this.users.deleteAccount(userId, dto, requestContext(req));
     clearAuthCookies(res);
   }
 }

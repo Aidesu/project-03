@@ -148,6 +148,10 @@ export class Profile {
   readonly deleting = signal(false);
   readonly deleteError = signal<TranslationKey | null>(null);
 
+  // Privacy — data export
+  readonly exporting = signal(false);
+  readonly exportError = signal<TranslationKey | null>(null);
+
   constructor() {
     const u = this.user();
     this.accountForm.patchValue({ name: u?.name ?? '', email: u?.email ?? '' });
@@ -207,6 +211,46 @@ export class Profile {
         this.avatarError.set('profile.avatar.removeFailed');
       },
     });
+  }
+
+  // ---- Data export -----------------------------------------------------
+
+  exportData(): void {
+    if (this.exporting()) return;
+    this.exporting.set(true);
+    this.exportError.set(null);
+    this.profileApi.exportData().subscribe({
+      next: (blob) => {
+        this.exporting.set(false);
+        this.saveBlob(blob);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.exporting.set(false);
+        // 429: the endpoint reads every table the account touches, so it is
+        // capped at a few calls per hour — worth its own message rather than a
+        // generic failure the user would retry straight into the same wall.
+        this.exportError.set(
+          err.status === 429
+            ? 'profile.privacy.tooMany'
+            : 'profile.privacy.error',
+        );
+      },
+    });
+  }
+
+  private saveBlob(blob: Blob): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `project-03-export-${new Date().toISOString().slice(0, 10)}.json`;
+    // Attached before clicking: a detached anchor is ignored by some browsers.
+    document.body.append(link);
+    link.click();
+    link.remove();
+    // The blob stays pinned in memory until the URL is released, but revoking
+    // it in the same task can cancel the download that just started — hand the
+    // browser a tick first.
+    setTimeout(() => URL.revokeObjectURL(url));
   }
 
   // ---- Account info ---------------------------------------------------

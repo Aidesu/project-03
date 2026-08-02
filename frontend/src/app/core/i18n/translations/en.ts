@@ -508,6 +508,14 @@ export const en = {
   'profile.settings.success': 'Settings saved.',
   'profile.settings.loadError': 'The settings could not be loaded.',
   'profile.settings.saveError': 'The settings could not be saved. Try again.',
+  'profile.privacy.title': 'Your data',
+  'profile.privacy.body':
+    'Download everything this account holds — applications, companies, contacts, reminders, templates, progress and security history — as a single JSON file. Requesting a copy does not delete anything.',
+  'profile.privacy.export': 'Download my data',
+  'profile.privacy.exporting': 'Preparing your file…',
+  'profile.privacy.error': 'Your export could not be prepared. Please try again.',
+  'profile.privacy.tooMany':
+    'Too many exports requested. Please wait a moment before trying again.',
   'profile.danger.title': 'Danger zone',
   'profile.danger.body':
     'This permanently deletes your account and every piece of data attached to it (applications, companies, documents, email templates, progress). This action cannot be undone.',

@@ -24,6 +24,26 @@ enum VerificationTokenPurpose {
   EMAIL_VERIFICATION
 }
 
+enum AuditAction {
+  USER_REGISTERED
+  USER_LOGIN
+  USER_LOGOUT
+  PASSWORD_CHANGED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  EMAIL_CHANGED
+  EMAIL_VERIFICATION_SENT
+  EMAIL_VERIFIED
+  ACCOUNT_DELETED
+  REFRESH_TOKEN_REUSE_DETECTED
+  DATA_EXPORTED
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+}
+
 enum ApplicationStatus {
   WISHLIST // saved, not applied yet
   DRAFT // application in preparation
@@ -227,6 +247,39 @@ model VerificationToken {
 
   @@index([userId, purpose])
   @@index([expiresAt])
+}
+
+/// Append-only trail of security-relevant events: who, what, when, from where.
+///
+/// Deliberately has no foreign key to User. Two reasons, both structural:
+/// account deletion is itself an audited event, so the row has to outlive the
+/// account; and `onDelete: SetNull` would issue an UPDATE, which the
+/// append-only trigger installed by the migration rejects outright.
+///
+/// Nothing directly identifying is stored — no address, no name, no request
+/// body. Once the account is gone, `userId` is an integer pointing at nothing
+/// (autoincrement never reuses a value, so it stays unambiguous).
+model AuditLog {
+  id         String       @id @default(uuid())
+  occurredAt DateTime     @default(now())
+  action     AuditAction
+  outcome    AuditOutcome
+  /// Internal User.id, or null when the actor is unauthenticated or unknown
+  /// (failed login on an address with no account).
+  userId     Int?
+  /// Truncated to 45 chars (max IPv6 length) by AuditService.
+  ip         String?
+  /// Truncated to 255 chars by AuditService.
+  userAgent  String?
+  /// Ties the entry to the application logs for the same request.
+  correlationId String?
+  /// Small, non-identifying facts only (a failure reason, a counter, a session
+  /// family id). Never PII, never a token, never a request body.
+  metadata   Json?
+
+  @@index([userId, occurredAt])
+  @@index([action, occurredAt])
+  @@index([occurredAt])
 }
 
 model UserSettings {

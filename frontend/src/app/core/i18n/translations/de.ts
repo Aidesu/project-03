@@ -523,6 +523,15 @@ export const de: Record<TranslationKey, string> = {
   'profile.settings.loadError': 'Die Einstellungen konnten nicht geladen werden.',
   'profile.settings.saveError':
     'Die Einstellungen konnten nicht gespeichert werden. Versuch es erneut.',
+  'profile.privacy.title': 'Ihre Daten',
+  'profile.privacy.body':
+    'Laden Sie alles herunter, was dieses Konto enthält — Bewerbungen, Unternehmen, Kontakte, Erinnerungen, Vorlagen, Fortschritt und Sicherheitsverlauf — in einer einzigen JSON-Datei. Das Anfordern einer Kopie löscht nichts.',
+  'profile.privacy.export': 'Meine Daten herunterladen',
+  'profile.privacy.exporting': 'Ihre Datei wird vorbereitet…',
+  'profile.privacy.error':
+    'Ihr Export konnte nicht vorbereitet werden. Bitte versuchen Sie es erneut.',
+  'profile.privacy.tooMany':
+    'Zu viele Exporte angefordert. Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.',
   'profile.danger.title': 'Gefahrenzone',
   'profile.danger.body':
     'Diese Aktion löscht dein Konto und alle zugehörigen Daten endgültig (Bewerbungen, Unternehmen, Dokumente, E-Mail-Vorlagen, Fortschritt). Sie kann nicht rückgängig gemacht werden.',

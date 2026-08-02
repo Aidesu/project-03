@@ -67,6 +67,19 @@ export function validateEnv(
     }
   }
 
+  // How long the audit trail keeps IP addresses and user agents. Too short and
+  // an incident is already unreconstructible; unbounded and it becomes personal
+  // data kept without a limit.
+  const retention = config.AUDIT_LOG_RETENTION_DAYS;
+  if (retention !== undefined && retention !== '') {
+    const parsed = Number(retention);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3650) {
+      errors.push(
+        'AUDIT_LOG_RETENTION_DAYS must be an integer between 1 and 3650.',
+      );
+    }
+  }
+
   if (isProd) {
     const rawOrigins =
       typeof config.CORS_ORIGIN === 'string' ? config.CORS_ORIGIN : '';
