@@ -10,6 +10,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { ConfirmService } from '../core/confirm.service';
 import {
   I18nService,
   LOCALE_NAMES,
@@ -19,6 +20,7 @@ import {
 } from '../core/i18n';
 import { initialsOf } from '../core/initials';
 import {
+  ActiveSession,
   ChangePasswordInput,
   DeleteAccountInput,
   ProfileService,
@@ -60,8 +62,10 @@ export class Profile {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
+  private readonly confirm = inject(ConfirmService);
 
   readonly t = this.i18n.t;
+  readonly dateTime = this.i18n.dateTime;
   readonly user = this.auth.user;
   readonly passwordMin = PASSWORD_MIN;
 
@@ -152,10 +156,24 @@ export class Profile {
   readonly exporting = signal(false);
   readonly exportError = signal<TranslationKey | null>(null);
 
+  // ---- Security — active sessions -------------------------------------
+  readonly sessions = signal<ActiveSession[]>([]);
+  readonly sessionsLoading = signal(true);
+  readonly sessionsError = signal<TranslationKey | null>(null);
+  /** Family id currently being revoked, so only that row shows a pending state. */
+  readonly revokingId = signal<string | null>(null);
+  readonly revokingOthers = signal(false);
+
+  /** The other devices — drives the "sign out everywhere else" button. */
+  readonly otherSessionCount = computed(
+    () => this.sessions().filter((s) => !s.current).length,
+  );
+
   constructor() {
     const u = this.user();
     this.accountForm.patchValue({ name: u?.name ?? '', email: u?.email ?? '' });
     this.loadSettings();
+    this.loadSessions();
 
     // The expected confirmation word is language-dependent, so an already
     // typed value has to be re-checked when the language changes — otherwise
@@ -234,6 +252,116 @@ export class Profile {
             ? 'profile.privacy.tooMany'
             : 'profile.privacy.error',
         );
+      },
+    });
+  }
+
+  // ---- Security — active sessions -------------------------------------
+
+  loadSessions(): void {
+    this.sessionsLoading.set(true);
+    this.profileApi.listSessions().subscribe({
+      next: ({ sessions }) => {
+        this.sessions.set(sessions);
+        this.sessionsError.set(null);
+        this.sessionsLoading.set(false);
+      },
+      error: () => {
+        this.sessionsLoading.set(false);
+        this.sessionsError.set('profile.sessions.loadError');
+      },
+    });
+  }
+
+  /**
+   * A readable name for a device, derived from its user agent.
+   *
+   * Deliberately crude: parsing user agents properly means shipping a database
+   * that goes stale, and the string is a hint the user recognises ("my Firefox
+   * on the laptop"), not an identification. The raw value is shown as a title
+   * so nothing is hidden from them.
+   */
+  deviceLabel(session: ActiveSession): string {
+    const ua = session.userAgent;
+    if (!ua) return this.t('profile.sessions.unknownDevice');
+
+    const browser =
+      /Edg\//.test(ua) ? 'Edge'
+      : /OPR\//.test(ua) ? 'Opera'
+      : /Firefox\//.test(ua) ? 'Firefox'
+      : /Chrome\//.test(ua) ? 'Chrome'
+      : /Safari\//.test(ua) ? 'Safari'
+      : null;
+
+    const os =
+      /Windows/.test(ua) ? 'Windows'
+      : /Android/.test(ua) ? 'Android'
+      : /iPhone|iPad|iOS/.test(ua) ? 'iOS'
+      : /Mac OS X|Macintosh/.test(ua) ? 'macOS'
+      : /Linux/.test(ua) ? 'Linux'
+      : null;
+
+    if (browser && os) return `${browser} — ${os}`;
+    return browser ?? os ?? this.t('profile.sessions.unknownDevice');
+  }
+
+  async revokeSession(session: ActiveSession): Promise<void> {
+    if (session.current || this.revokingId()) return;
+
+    const confirmed = await this.confirm.ask({
+      title: 'profile.sessions.revokeConfirmTitle',
+      message: 'profile.sessions.revokeConfirmBody',
+      params: { device: this.deviceLabel(session) },
+      confirmLabel: 'profile.sessions.revoke',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+
+    this.revokingId.set(session.id);
+    this.sessionsError.set(null);
+    this.profileApi.revokeSession(session.id).subscribe({
+      next: () => {
+        // Drop it locally rather than refetching: one less round trip, and the
+        // server is the one that just confirmed it is gone.
+        this.sessions.update((list) => list.filter((s) => s.id !== session.id));
+        this.revokingId.set(null);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.revokingId.set(null);
+        // 404 means it was already revoked — from another tab, or because it
+        // expired between the render and the click. Not an error worth showing:
+        // reload so the list matches reality.
+        if (err.status === 404) {
+          this.loadSessions();
+          return;
+        }
+        this.sessionsError.set('profile.sessions.revokeError');
+      },
+    });
+  }
+
+  async revokeOtherSessions(): Promise<void> {
+    if (this.revokingOthers() || this.otherSessionCount() === 0) return;
+
+    const confirmed = await this.confirm.ask({
+      title: 'profile.sessions.revokeAllConfirmTitle',
+      message: 'profile.sessions.revokeAllConfirmBody',
+      params: { count: this.otherSessionCount() },
+      confirmLabel: 'profile.sessions.revokeAll',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+
+    this.revokingOthers.set(true);
+    this.sessionsError.set(null);
+    this.profileApi.revokeOtherSessions().subscribe({
+      next: () => {
+        this.sessions.update((list) => list.filter((s) => s.current));
+        this.revokingOthers.set(false);
+      },
+      error: () => {
+        this.revokingOthers.set(false);
+        this.sessionsError.set('profile.sessions.revokeError');
       },
     });
   }

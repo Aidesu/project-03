@@ -113,6 +113,7 @@ pnpm start                    # http://localhost:4200 — proxies /api to localh
 | `S3_ENDPOINT`  | MinIO/S3 endpoint for attachments    | `http://localhost:9000` |
 | `S3_BUCKET`    | Bucket for uploaded files            | `project03-uploads`     |
 | `AUDIT_LOG_RETENTION_DAYS` | How long audit entries are kept (they hold IPs) | `365` |
+| `SESSION_RETENTION_DAYS` | How long dead refresh sessions are kept (they hold IPs) | `30` |
 
 ## Authentication
 

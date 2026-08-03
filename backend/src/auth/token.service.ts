@@ -66,8 +66,11 @@ export class TokenService {
    * else — an attacker with write access to the database (SQL injection, a
    * restored backup) still cannot mint a session row matching a token they
    * chose, because the key never lives in the database.
+   *
+   * Public so SessionsService can locate the caller's own row to flag it in
+   * the session list, without a second hashing scheme drifting from this one.
    */
-  private hashToken(raw: string): string {
+  hashToken(raw: string): string {
     return createHmac('sha256', this.refreshSecret).update(raw).digest('hex');
   }
 
@@ -145,6 +148,9 @@ export class TokenService {
           userId: session.userId,
           tokenHash: this.hashToken(token),
           familyId: session.familyId,
+          // Carried over, not defaulted: this is when the device signed in,
+          // and a rotation every 15 minutes must not keep resetting it.
+          familyCreatedAt: session.familyCreatedAt,
           expiresAt: this.refreshExpiry(),
           userAgent: ctx.userAgent ?? null,
           ip: ctx.ip ?? null,

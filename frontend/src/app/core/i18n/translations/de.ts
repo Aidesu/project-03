@@ -542,6 +542,28 @@ export const de: Record<TranslationKey, string> = {
     'Ihr Export konnte nicht vorbereitet werden. Bitte versuchen Sie es erneut.',
   'profile.privacy.tooMany':
     'Zu viele Exporte angefordert. Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.',
+  'profile.sessions.title': 'Aktive Sitzungen',
+  'profile.sessions.body':
+    'Die Geräte, die derzeit in Ihrem Konto angemeldet sind. Wenn Sie eines nicht erkennen, melden Sie es ab — es muss sich dann erneut anmelden.',
+  'profile.sessions.loading': 'Ihre Sitzungen werden geladen…',
+  'profile.sessions.empty': 'Kein anderes Gerät ist angemeldet.',
+  'profile.sessions.currentBadge': 'Dieses Gerät',
+  'profile.sessions.unknownDevice': 'Unbekanntes Gerät',
+  'profile.sessions.signedInAt': 'Angemeldet:',
+  'profile.sessions.lastSeenAt': 'Zuletzt aktiv:',
+  'profile.sessions.ip': 'IP:',
+  'profile.sessions.revoke': 'Abmelden',
+  'profile.sessions.revokeAll':
+    '{count, plural, one {# anderes Gerät abmelden} other {# andere Geräte abmelden}}',
+  'profile.sessions.revokeConfirmTitle': 'Dieses Gerät abmelden?',
+  'profile.sessions.revokeConfirmBody':
+    '{device} wird sofort abgemeldet und muss sich erneut anmelden. Ihre Daten sind nicht betroffen.',
+  'profile.sessions.revokeAllConfirmTitle': 'Alle anderen Geräte abmelden?',
+  'profile.sessions.revokeAllConfirmBody':
+    '{count, plural, one {# anderes Gerät wird sofort abgemeldet.} other {# andere Geräte werden sofort abgemeldet.}} Dieses Gerät bleibt angemeldet, und Ihre Daten sind nicht betroffen.',
+  'profile.sessions.loadError': 'Ihre Sitzungen konnten nicht geladen werden.',
+  'profile.sessions.revokeError':
+    'Diese Sitzung konnte nicht abgemeldet werden. Bitte erneut versuchen.',
   'profile.danger.title': 'Gefahrenzone',
   'profile.danger.body':
     'Diese Aktion löscht dein Konto und alle zugehörigen Daten endgültig (Bewerbungen, Unternehmen, Dokumente, E-Mail-Vorlagen, Fortschritt). Sie kann nicht rückgängig gemacht werden.',

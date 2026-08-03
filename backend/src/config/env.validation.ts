@@ -80,6 +80,19 @@ export function validateEnv(
     }
   }
 
+  // How long revoked/expired refresh sessions are kept. They carry an IP and a
+  // user agent, so this is a retention limit on personal data. Capped well
+  // below the audit window: the trail is what answers questions months later.
+  const sessionRetention = config.SESSION_RETENTION_DAYS;
+  if (sessionRetention !== undefined && sessionRetention !== '') {
+    const parsed = Number(sessionRetention);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
+      errors.push(
+        'SESSION_RETENTION_DAYS must be an integer between 1 and 365.',
+      );
+    }
+  }
+
   // Backing store for the rate-limit counters. Without it the throttler counts
   // in process memory: limits reset on every deploy and multiply by the number
   // of instances, which is the difference between a real brute-force control

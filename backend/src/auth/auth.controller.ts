@@ -1,9 +1,13 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Post,
   Req,
   Res,
@@ -28,6 +32,10 @@ import {
   VerifyEmailDto,
 } from './dto/password-reset.dto';
 import { RegisterDto } from './dto/register.dto';
+import {
+  CurrentSessionRevocationError,
+  SessionsService,
+} from './sessions.service';
 import type { AccessTokenPayload } from './token.service';
 
 @Controller('auth')
@@ -37,6 +45,7 @@ export class AuthController {
     private readonly csrf: CsrfService,
     private readonly users: UsersService,
     private readonly recovery: AccountRecoveryService,
+    private readonly sessions: SessionsService,
   ) {}
 
   /** Bootstrap CSRF: sets the XSRF-TOKEN cookie the SPA echoes back as a header. */
@@ -178,5 +187,62 @@ export class AuthController {
       { id: user.sub, email: user.email },
       { context: requestContext(req) },
     );
+  }
+
+  /**
+   * The session routes live here rather than under /users/me because the
+   * refresh cookie is path-scoped to /api/auth (see REFRESH_COOKIE_PATH). It
+   * never reaches the users controller, and without it there is no way to tell
+   * the caller's own device apart from the others in the list.
+   */
+  @Get('sessions')
+  async listSessions(
+    @CurrentUser('sub') userId: number,
+    @Req() req: CorrelatedRequest,
+  ) {
+    const sessions = await this.sessions.listActive(
+      userId,
+      req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined,
+    );
+    return { sessions };
+  }
+
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('sessions/:id')
+  async revokeSession(
+    @CurrentUser('sub') userId: number,
+    @Param('id', new ParseUUIDPipe()) familyId: string,
+    @Req() req: CorrelatedRequest,
+  ): Promise<void> {
+    try {
+      await this.sessions.revokeFamily(
+        userId,
+        familyId,
+        req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined,
+        requestContext(req),
+      );
+    } catch (err) {
+      if (err instanceof CurrentSessionRevocationError) {
+        throw new BadRequestException('Use logout to end the current session.');
+      }
+      throw err;
+    }
+  }
+
+  /** "Sign out everywhere else" — the caller's own device stays signed in. */
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @Delete('sessions')
+  async revokeOtherSessions(
+    @CurrentUser('sub') userId: number,
+    @Req() req: CorrelatedRequest,
+  ) {
+    const revoked = await this.sessions.revokeAllOthers(
+      userId,
+      req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined,
+      requestContext(req),
+    );
+    return { revoked };
   }
 }
