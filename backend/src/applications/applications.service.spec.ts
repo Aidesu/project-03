@@ -1,4 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ApplicationStatus, XpReason } from '@prisma/client';
 import { UserTimezoneService } from '../common/user-timezone.service';
 import { CompaniesService } from '../companies/companies.service';
 import { GamificationService } from '../gamification/gamification.service';
@@ -18,13 +19,21 @@ describe('ApplicationsService', () => {
       create: jest.Mock;
       findFirst: jest.Mock;
       findMany: jest.Mock;
+      update: jest.Mock;
+      delete: jest.Mock;
     };
     company: { count: jest.Mock; findFirst: jest.Mock };
     contact: { count: jest.Mock };
     tag: { count: jest.Mock };
+    applicationStatusEvent: { create: jest.Mock };
     $transaction: jest.Mock;
   };
   let companies: { create: jest.Mock };
+  let gamification: {
+    award: jest.Mock;
+    syncAchievements: jest.Mock;
+    revokeForApplication: jest.Mock;
+  };
   let service: ApplicationsService;
 
   beforeEach(() => {
@@ -36,16 +45,30 @@ describe('ApplicationsService', () => {
         }),
         findFirst: jest.fn(),
         findMany: jest.fn(),
+        update: jest.fn().mockResolvedValue({ id: APPLICATION_ID }),
+        delete: jest.fn().mockResolvedValue({ id: APPLICATION_ID }),
       },
       company: { count: jest.fn(), findFirst: jest.fn() },
       contact: { count: jest.fn() },
       tag: { count: jest.fn() },
-      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+      applicationStatusEvent: { create: jest.fn() },
+      // Both forms are used: a batch of promises, and an interactive callback
+      // that must run against the same mock.
+      $transaction: jest.fn((arg: unknown) =>
+        typeof arg === 'function'
+          ? (arg as (tx: unknown) => unknown)(prisma)
+          : Promise.all(arg as Promise<unknown>[]),
+      ),
     };
     companies = { create: jest.fn() };
+    gamification = {
+      award: jest.fn(),
+      syncAchievements: jest.fn(),
+      revokeForApplication: jest.fn().mockResolvedValue(0),
+    };
     service = new ApplicationsService(
       prisma as unknown as PrismaService,
-      { award: jest.fn() } as unknown as GamificationService,
+      gamification as unknown as GamificationService,
       companies as unknown as CompaniesService,
       {
         forUser: jest.fn().mockResolvedValue(TIME_ZONE),
@@ -139,6 +162,102 @@ describe('ApplicationsService', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
 
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('changeStatus', () => {
+    const changeTo = async (from: ApplicationStatus, to: ApplicationStatus) => {
+      prisma.jobApplication.findFirst.mockResolvedValue({
+        id: APPLICATION_ID,
+        userId: OWNER_ID,
+        status: from,
+        appliedAt: null,
+        closedAt: null,
+      });
+      await service.changeStatus(OWNER_ID, APPLICATION_ID, { status: to });
+    };
+
+    it('keys the milestone on the application, so a status loop pays once', async () => {
+      // APPLIED → INTERVIEW → APPLIED → INTERVIEW used to credit 30 XP per
+      // lap. The award still fires on every transition; the ledger's unique
+      // (userId, dedupeKey) index is what makes only the first one land.
+      await changeTo(ApplicationStatus.APPLIED, ApplicationStatus.INTERVIEW);
+      await changeTo(ApplicationStatus.INTERVIEW, ApplicationStatus.APPLIED);
+      await changeTo(ApplicationStatus.APPLIED, ApplicationStatus.INTERVIEW);
+
+      const keys = gamification.award.mock.calls.map(
+        (call) => (call[3] as { dedupeKey: string }).dedupeKey,
+      );
+      expect(keys).toEqual([
+        `${XpReason.INTERVIEW_SCHEDULED}:${APPLICATION_ID}`,
+        `${XpReason.APPLICATION_SUBMITTED}:${APPLICATION_ID}`,
+        `${XpReason.INTERVIEW_SCHEDULED}:${APPLICATION_ID}`,
+      ]);
+      expect(keys[0]).toBe(keys[2]);
+    });
+
+    it('awards nothing when the status did not actually move', async () => {
+      await changeTo(ApplicationStatus.INTERVIEW, ApplicationStatus.INTERVIEW);
+
+      expect(gamification.award).not.toHaveBeenCalled();
+      expect(prisma.applicationStatusEvent.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses a status change on another user application', async () => {
+      prisma.jobApplication.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.changeStatus(OWNER_ID, APPLICATION_ID, {
+          status: ApplicationStatus.ACCEPTED,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(gamification.award).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    beforeEach(() => {
+      prisma.jobApplication.findFirst.mockResolvedValue({
+        id: APPLICATION_ID,
+        userId: OWNER_ID,
+      });
+    });
+
+    it('takes the XP back before the row disappears', async () => {
+      // Order matters: XpEvent.applicationId is SetNull, so after the delete
+      // there is nothing left to total up — and keeping the XP would make
+      // delete-then-recreate pay every milestone a second time.
+      await service.remove(OWNER_ID, APPLICATION_ID);
+
+      expect(gamification.revokeForApplication).toHaveBeenCalledWith(
+        prisma,
+        OWNER_ID,
+        APPLICATION_ID,
+      );
+      expect(
+        gamification.revokeForApplication.mock.invocationCallOrder[0],
+      ).toBeLessThan(prisma.jobApplication.delete.mock.invocationCallOrder[0]);
+    });
+
+    it('does not delete when the withdrawal fails', async () => {
+      // Both in one transaction: XP taken for an application still there would
+      // be worse than XP kept for one that is gone.
+      gamification.revokeForApplication.mockRejectedValue(new Error('boom'));
+
+      await expect(service.remove(OWNER_ID, APPLICATION_ID)).rejects.toThrow(
+        'boom',
+      );
+      expect(prisma.jobApplication.delete).not.toHaveBeenCalled();
+    });
+
+    it('refuses to delete another user application', async () => {
+      prisma.jobApplication.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.remove(OWNER_ID, APPLICATION_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(gamification.revokeForApplication).not.toHaveBeenCalled();
+      expect(prisma.jobApplication.delete).not.toHaveBeenCalled();
     });
   });
 

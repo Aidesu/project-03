@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { avatarColor } from '../core/avatar-color';
 import { CompaniesService } from '../core/companies.service';
+import { ConfirmService } from '../core/confirm.service';
 import { ContactsService } from '../core/contacts.service';
 import { I18nService } from '../core/i18n';
 import { CompanyListItem, Contact, Paginated } from '../core/models';
@@ -22,6 +23,7 @@ export class Network {
   private readonly router = inject(Router);
   private readonly companiesApi = inject(CompaniesService);
   private readonly contactsApi = inject(ContactsService);
+  private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
 
   readonly t = this.i18n.t;
@@ -134,9 +136,16 @@ export class Network {
     this.load();
   }
 
-  removeCompany(c: CompanyListItem): void {
+  async removeCompany(c: CompanyListItem): Promise<void> {
     if (this.deletingId()) return;
-    if (!confirm(this.t('network.confirmDeleteCompany', { name: c.name }))) return;
+    const confirmed = await this.confirm.ask({
+      title: 'network.confirmDeleteCompany.title',
+      message: 'network.confirmDeleteCompany.body',
+      params: { name: c.name },
+      confirmLabel: 'common.delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     this.deletingId.set(c.id);
     this.companiesApi.remove(c.id).subscribe({
       next: () => {
@@ -147,13 +156,16 @@ export class Network {
     });
   }
 
-  removeContact(c: Contact): void {
+  async removeContact(c: Contact): Promise<void> {
     if (this.deletingId()) return;
-    if (
-      !confirm(this.t('network.confirmDeleteContact', { name: this.contactName(c) }))
-    ) {
-      return;
-    }
+    const confirmed = await this.confirm.ask({
+      title: 'network.confirmDeleteContact.title',
+      message: 'network.confirmDeleteContact.body',
+      params: { name: this.contactName(c) },
+      confirmLabel: 'common.delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     this.deletingId.set(c.id);
     this.contactsApi.remove(c.id).subscribe({
       next: () => {

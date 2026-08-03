@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ApplicationStatus,
   GamificationProfile,
+  Prisma,
   XpReason,
 } from '@prisma/client';
 import {
@@ -48,6 +49,27 @@ const metricFor = (code: string): AchievementMetric =>
   ACHIEVEMENT_METRIC[code] ?? 'applications';
 
 /**
+ * Idempotency key for an award that may only ever be paid once for a given
+ * subject — a milestone on one application, one interview, one achievement.
+ *
+ * Without it, every reward here is farmable: the status milestones fire on each
+ * distinct transition, so APPLIED → INTERVIEW → APPLIED → INTERVIEW loops
+ * indefinitely, and an interview toggled PASSED → PENDING → PASSED pays again.
+ *
+ * `subjectId` is a UUID from whichever table owns the milestone; the reason
+ * prefix keeps two different milestones on the same row apart.
+ */
+export const oncePer = (reason: XpReason, subjectId: string): string =>
+  `${reason}:${subjectId}`;
+
+export interface AwardOptions {
+  /** Ledger attribution — which application this XP came from, if any. */
+  applicationId?: string;
+  /** Set for a one-off milestone; leave unset for a repeatable award. */
+  dedupeKey?: string;
+}
+
+/**
  * Streak arithmetic on calendar days, where `today` is the user's local date —
  * a day boundary is where their clock says it is, not where UTC says it is.
  * `lastActiveOn` stores that date pinned to UTC midnight (see
@@ -86,15 +108,24 @@ export class GamificationService {
     userId: number,
     reason: XpReason,
     amount: number,
-    applicationId?: string,
+    options: AwardOptions = {},
   ): Promise<void> {
-    await this.grantXp(userId, reason, amount, applicationId);
+    await this.grantXp(userId, reason, amount, options);
+    // Runs even when the award was a duplicate: achievements are evaluated
+    // against live counts, so a metric can still have moved (an interview was
+    // added) while the XP for that milestone was already paid.
     await this.syncAchievements(userId);
   }
 
   /**
    * Append to the XP ledger and move the profile forward, creating it lazily on
-   * first activity. Returns the resulting XP total.
+   * first activity. Returns the resulting XP total, or `null` when the award
+   * carried a dedupe key that had already been used.
+   *
+   * The ledger insert is the gate, not a preliminary check: the unique
+   * `(userId, dedupeKey)` index decides, and the insert count tells us whether
+   * this call is the one that won. A read-then-write would let two concurrent
+   * requests both find nothing and both pay out.
    *
    * The total is incremented by the database, never written as a value this
    * process computed: two awards racing (a status change and an achievement
@@ -109,8 +140,8 @@ export class GamificationService {
     userId: number,
     reason: XpReason,
     amount: number,
-    applicationId?: string,
-  ): Promise<number> {
+    options: AwardOptions = {},
+  ): Promise<number | null> {
     const timeZone = await this.timezones.forUser(userId);
     const today = calendarDayIn(new Date(), timeZone);
     const lastActiveOn = calendarDayToUtcMidnight(today);
@@ -121,9 +152,20 @@ export class GamificationService {
       });
       const { current, longest } = nextStreak(existing, today);
 
-      await tx.xpEvent.create({
-        data: { userId, reason, amount, applicationId: applicationId ?? null },
+      const { count } = await tx.xpEvent.createMany({
+        data: {
+          userId,
+          reason,
+          amount,
+          applicationId: options.applicationId ?? null,
+          dedupeKey: options.dedupeKey ?? null,
+        },
+        skipDuplicates: true,
       });
+      // Replaying a milestone is not activity: it must not extend the streak
+      // or refresh `lastActiveOn` either, or a flip-flop would keep a dead
+      // streak alive for free.
+      if (count === 0) return null;
 
       const profile = await tx.gamificationProfile.upsert({
         where: { userId },
@@ -156,6 +198,75 @@ export class GamificationService {
 
       return profile.xp;
     });
+  }
+
+  /**
+   * Take back the XP an application earned, as a reversal entry rather than an
+   * erasure — the ledger stays append-only and keeps summing to the profile
+   * total, which is what makes the total auditable at all.
+   *
+   * Without this, deleting an application is a free reset: its dedupe keys die
+   * with it, so recreating the same application pays every milestone again.
+   *
+   * Runs in the caller's transaction, and must run *before* the delete:
+   * `XpEvent.applicationId` is `SetNull`, so once the row is gone there is
+   * nothing left to total up.
+   *
+   * Returns the amount actually withdrawn.
+   */
+  async revokeForApplication(
+    tx: Prisma.TransactionClient,
+    userId: number,
+    applicationId: string,
+  ): Promise<number> {
+    const { _sum } = await tx.xpEvent.aggregate({
+      // Scoped by userId as well as the application: an id in a URL proves
+      // nothing, and this one reaches straight into someone's XP total.
+      where: { userId, applicationId, amount: { gt: 0 } },
+      _sum: { amount: true },
+    });
+    const earned = _sum.amount ?? 0;
+    if (earned <= 0) return 0;
+
+    const profile = await tx.gamificationProfile.findUnique({
+      where: { userId },
+    });
+    // Clamped to what the user actually holds: a reversal must never drive the
+    // total negative, and clamping the ledger entry itself — rather than the
+    // decrement — is what keeps the sum reconciling with the total.
+    const amount = Math.min(earned, profile?.xp ?? 0);
+    if (amount <= 0) return 0;
+
+    const { count } = await tx.xpEvent.createMany({
+      data: {
+        userId,
+        reason: XpReason.APPLICATION_DELETED,
+        amount: -amount,
+        // The application is about to disappear and would null this out anyway;
+        // the dedupe key is what records which one was reversed.
+        applicationId: null,
+        dedupeKey: oncePer(XpReason.APPLICATION_DELETED, applicationId),
+      },
+      skipDuplicates: true,
+    });
+    if (count === 0) return 0; // a concurrent delete already withdrew it
+
+    const updated = await tx.gamificationProfile.update({
+      where: { userId },
+      data: { xp: { decrement: amount } },
+    });
+    const level = levelForXp(updated.xp);
+    if (updated.level !== level) {
+      await tx.gamificationProfile.update({
+        where: { userId },
+        data: { level },
+      });
+    }
+
+    // Achievements are deliberately not re-locked: they are a record of
+    // something the user did, and re-locking would let the same one be earned
+    // twice. The unlock is one-way, so it cannot be farmed either.
+    return amount;
   }
 
   /** The user's progression summary (+ recent XP), with sane defaults if none yet. */
@@ -270,11 +381,14 @@ export class GamificationService {
           userId,
           XpReason.ACHIEVEMENT_UNLOCKED,
           achievement.xpReward,
+          {
+            dedupeKey: oncePer(XpReason.ACHIEVEMENT_UNLOCKED, achievement.id),
+          },
         );
         // The reward can push the user into a new level, and the level is
         // itself a metric — refresh it so a level achievement further down the
         // catalog unlocks in this same pass rather than on the next action.
-        metrics.level = levelForXp(xp);
+        if (xp !== null) metrics.level = levelForXp(xp);
       }
     }
   }

@@ -11,6 +11,7 @@ export const de: Record<TranslationKey, string> = {
   'common.saveChanges': 'Änderungen speichern',
   'common.saving': 'Wird gespeichert…',
   'common.cancel': 'Abbrechen',
+  'common.confirm': 'Bestätigen',
   'common.edit': 'Bearbeiten',
   'common.delete': 'Löschen',
   'common.deleting': 'Wird gelöscht…',
@@ -171,6 +172,7 @@ export const de: Record<TranslationKey, string> = {
   'xp.reason.DAILY_GOAL': 'Tagesziel',
   'xp.reason.WEEKLY_GOAL': 'Wochenziel',
   'xp.reason.ACHIEVEMENT_UNLOCKED': 'Erfolg freigeschaltet',
+  'xp.reason.APPLICATION_DELETED': 'Bewerbung gelöscht',
   'xp.reason.OTHER': 'Aktivität',
 
   // ---- Player card -----------------------------------------------------
@@ -256,7 +258,7 @@ export const de: Record<TranslationKey, string> = {
   // ---- Application detail ---------------------------------------------
   'applicationDetail.back': 'Bewerbungen',
   'applicationDetail.notFound': 'Bewerbung nicht gefunden.',
-  'applicationDetail.viewOffer': 'Anzeige ansehen',
+  'applicationDetail.website': 'Website',
   'applicationDetail.advance.title': 'Weiterbringen',
   'applicationDetail.advance.newStatus': 'Neuer Status',
   'applicationDetail.advance.note': 'Notiz (optional)',
@@ -285,7 +287,9 @@ export const de: Record<TranslationKey, string> = {
   'applicationDetail.history.title': 'Verlauf',
   'applicationDetail.danger.title': 'Gefahrenzone',
   'applicationDetail.danger.delete': 'Bewerbung löschen',
-  'applicationDetail.danger.confirm': 'Diese Bewerbung endgültig löschen?',
+  'applicationDetail.danger.confirm.title': 'Diese Bewerbung löschen?',
+  'applicationDetail.danger.confirm.body':
+    'Ihre Gespräche, ihr Statusverlauf und ihre Erinnerungen werden mitgelöscht, und die damit verdienten XP werden wieder abgezogen. Freigeschaltete Erfolge bleiben erhalten.',
 
   // ---- Network ---------------------------------------------------------
   'network.title': 'Netzwerk',
@@ -310,9 +314,12 @@ export const de: Record<TranslationKey, string> = {
   'network.companyContacts': '{count, plural, one {# Kontakt} other {# Kontakte}}',
   'network.deleteCompanyAria': 'Unternehmen löschen',
   'network.deleteContactAria': 'Kontakt löschen',
-  'network.confirmDeleteCompany':
-    '„{name}“ löschen? Verknüpfte Bewerbungen und Kontakte bleiben erhalten, verlieren aber diese Verknüpfung.',
-  'network.confirmDeleteContact': 'Den Kontakt „{name}“ löschen?',
+  'network.confirmDeleteCompany.title': '„{name}“ löschen?',
+  'network.confirmDeleteCompany.body':
+    'Verknüpfte Bewerbungen und Kontakte bleiben erhalten, verlieren aber diese Verknüpfung.',
+  'network.confirmDeleteContact.title': '„{name}“ löschen?',
+  'network.confirmDeleteContact.body':
+    'Gespräche und Bewerbungen, die auf diesen Kontakt verwiesen, bleiben erhalten, verlieren aber diese Verknüpfung.',
 
   // ---- Company detail --------------------------------------------------
   'companyDetail.back': 'Netzwerk',
@@ -326,8 +333,9 @@ export const de: Record<TranslationKey, string> = {
   'companyDetail.applications.empty': 'Keine Bewerbung mit diesem Unternehmen verknüpft.',
   'companyDetail.appliedOn': 'Beworben am {date}',
   'companyDetail.notSentYet': 'Noch nicht abgeschickt',
-  'companyDetail.confirmDelete':
-    '„{name}“ löschen? Die {applications, plural, one {# verknüpfte Bewerbung} other {# verknüpften Bewerbungen}} und {contacts, plural, one {# verknüpfter Kontakt} other {# verknüpften Kontakte}} bleiben erhalten, verlieren aber diese Verknüpfung.',
+  'companyDetail.confirmDelete.title': '„{name}“ löschen?',
+  'companyDetail.confirmDelete.body':
+    'Die {applications, plural, one {# verknüpfte Bewerbung} other {# verknüpften Bewerbungen}} und {contacts, plural, one {# verknüpfter Kontakt} other {# verknüpften Kontakte}} bleiben erhalten, verlieren aber diese Verknüpfung.',
 
   // ---- Contact detail --------------------------------------------------
   'contactDetail.back': 'Netzwerk',
@@ -421,7 +429,9 @@ export const de: Record<TranslationKey, string> = {
   'emailTemplates.empty.title': 'Noch keine Vorlage.',
   'emailTemplates.empty.body':
     'Erstelle deine erste Vorlage zum Nachfassen oder Bedanken.',
-  'emailTemplates.confirmDelete': 'Die Vorlage „{name}“ löschen?',
+  'emailTemplates.confirmDelete.title': '„{name}“ löschen?',
+  'emailTemplates.confirmDelete.body':
+    'Diese Vorlage wird endgültig entfernt. Sonst ändert sich nichts.',
 
   'templateVar.poste': 'Stellenbezeichnung',
   'templateVar.entreprise': 'Name des Unternehmens',

@@ -11,6 +11,7 @@ export const en = {
   'common.saveChanges': 'Save changes',
   'common.saving': 'Saving…',
   'common.cancel': 'Cancel',
+  'common.confirm': 'Confirm',
   'common.edit': 'Edit',
   'common.delete': 'Delete',
   'common.deleting': 'Deleting…',
@@ -165,6 +166,7 @@ export const en = {
   'xp.reason.DAILY_GOAL': 'Daily goal',
   'xp.reason.WEEKLY_GOAL': 'Weekly goal',
   'xp.reason.ACHIEVEMENT_UNLOCKED': 'Achievement unlocked',
+  'xp.reason.APPLICATION_DELETED': 'Application deleted',
   'xp.reason.OTHER': 'Activity',
 
   // ---- Player card -----------------------------------------------------
@@ -248,7 +250,7 @@ export const en = {
   // ---- Application detail ---------------------------------------------
   'applicationDetail.back': 'Applications',
   'applicationDetail.notFound': 'Application not found.',
-  'applicationDetail.viewOffer': 'View posting',
+  'applicationDetail.website': 'Website',
   'applicationDetail.advance.title': 'Move it forward',
   'applicationDetail.advance.newStatus': 'New status',
   'applicationDetail.advance.note': 'Note (optional)',
@@ -277,7 +279,9 @@ export const en = {
   'applicationDetail.history.title': 'History',
   'applicationDetail.danger.title': 'Danger zone',
   'applicationDetail.danger.delete': 'Delete application',
-  'applicationDetail.danger.confirm': 'Permanently delete this application?',
+  'applicationDetail.danger.confirm.title': 'Delete this application?',
+  'applicationDetail.danger.confirm.body':
+    'Its interviews, status history and reminders go with it, and the XP it earned is taken back. Unlocked achievements stay.',
 
   // ---- Network ---------------------------------------------------------
   'network.title': 'Network',
@@ -302,9 +306,12 @@ export const en = {
   'network.companyContacts': '{count, plural, one {# contact} other {# contacts}}',
   'network.deleteCompanyAria': 'Delete company',
   'network.deleteContactAria': 'Delete contact',
-  'network.confirmDeleteCompany':
-    'Delete “{name}”? Linked applications and contacts are kept, but they lose this link.',
-  'network.confirmDeleteContact': 'Delete the contact “{name}”?',
+  'network.confirmDeleteCompany.title': 'Delete “{name}”?',
+  'network.confirmDeleteCompany.body':
+    'Linked applications and contacts are kept, but they lose this link.',
+  'network.confirmDeleteContact.title': 'Delete “{name}”?',
+  'network.confirmDeleteContact.body':
+    'Interviews and applications that referenced this contact are kept, but they lose this link.',
 
   // ---- Company detail --------------------------------------------------
   'companyDetail.back': 'Network',
@@ -318,8 +325,9 @@ export const en = {
   'companyDetail.applications.empty': 'No application linked to this company.',
   'companyDetail.appliedOn': 'Applied on {date}',
   'companyDetail.notSentYet': 'Not sent yet',
-  'companyDetail.confirmDelete':
-    'Delete “{name}”? The {applications, plural, one {# linked application} other {# linked applications}} and {contacts, plural, one {# linked contact} other {# linked contacts}} are kept, but they lose this link.',
+  'companyDetail.confirmDelete.title': 'Delete “{name}”?',
+  'companyDetail.confirmDelete.body':
+    'The {applications, plural, one {# linked application} other {# linked applications}} and {contacts, plural, one {# linked contact} other {# linked contacts}} are kept, but they lose this link.',
 
   // ---- Contact detail --------------------------------------------------
   'contactDetail.back': 'Network',
@@ -408,7 +416,9 @@ export const en = {
   'emailTemplates.copyError': 'Automatic copy failed — select the text manually.',
   'emailTemplates.empty.title': 'No template yet.',
   'emailTemplates.empty.body': 'Create your first follow-up or thank-you template.',
-  'emailTemplates.confirmDelete': 'Delete the template “{name}”?',
+  'emailTemplates.confirmDelete.title': 'Delete “{name}”?',
+  'emailTemplates.confirmDelete.body':
+    'This template is removed permanently. Nothing else is affected.',
 
   // Template variable hints. The `{{token}}` names themselves are stored in
   // user content and must never be translated — only their description is.

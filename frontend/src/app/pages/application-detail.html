@@ -25,14 +25,14 @@
         </div>
         <p class="mt-1 text-slate-500">
           {{ d.company?.name || d.companyName || t('applications.unknownCompany') }}
-          @if (d.jobUrl) {
+          @if (websiteHref(d.company?.website ?? null); as href) {
             <span class="text-slate-300">•</span>
             <a
-              [href]="d.jobUrl"
+              [href]="href"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               class="link-external text-sm"
-              >{{ t('applicationDetail.viewOffer') }}</a
+              >{{ t('applicationDetail.website') }}</a
             >
           }
         </p>

@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmailTemplateInput, EmailTemplatesService } from '../core/email-templates.service';
+import { ConfirmService } from '../core/confirm.service';
 import { EMAIL_TEMPLATE_CATEGORY_KEYS, optionsFrom } from '../core/enums';
 import { I18nService, TranslationKey } from '../core/i18n';
 import { EmailTemplate, EmailTemplateCategory } from '../core/models';
@@ -14,6 +15,7 @@ import { TEMPLATE_VARIABLE_HINTS } from '../core/template-vars';
 export class EmailTemplates {
   private readonly fb = inject(FormBuilder);
   private readonly templatesApi = inject(EmailTemplatesService);
+  private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
 
   readonly t = this.i18n.t;
@@ -146,9 +148,16 @@ export class EmailTemplates {
     });
   }
 
-  remove(t: EmailTemplate): void {
+  async remove(t: EmailTemplate): Promise<void> {
     if (this.deletingId()) return;
-    if (!confirm(this.t('emailTemplates.confirmDelete', { name: t.name }))) return;
+    const confirmed = await this.confirm.ask({
+      title: 'emailTemplates.confirmDelete.title',
+      message: 'emailTemplates.confirmDelete.body',
+      params: { name: t.name },
+      confirmLabel: 'common.delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     this.deletingId.set(t.id);
     this.templatesApi.remove(t.id).subscribe({
       next: () => {

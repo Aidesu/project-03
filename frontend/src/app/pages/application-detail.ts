@@ -2,9 +2,11 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApplicationsService } from '../core/applications.service';
+import { ConfirmService } from '../core/confirm.service';
 import { ALL_STATUSES, STATUS_BADGE, STATUS_KEYS } from '../core/application-status';
 import { AuthService } from '../core/auth.service';
 import { EmailTemplatesService } from '../core/email-templates.service';
+import { externalUrl } from '../core/external-url';
 import {
   EMPLOYMENT_TYPE_KEYS,
   INTERVIEW_OUTCOME_KEYS,
@@ -28,6 +30,7 @@ export class ApplicationDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly applications = inject(ApplicationsService);
+  private readonly confirm = inject(ConfirmService);
   private readonly emailTemplatesApi = inject(EmailTemplatesService);
   private readonly auth = inject(AuthService);
   private readonly i18n = inject(I18nService);
@@ -83,6 +86,10 @@ export class ApplicationDetailPage {
 
   // ---- Localized display helpers --------------------------------------
 
+  websiteHref(website: string | null): string | null {
+    return externalUrl(website);
+  }
+
   workModeLabel(value: ApplicationDetail['workMode']): string {
     return labelOf(WORK_MODE_KEYS, value, this.t);
   }
@@ -120,9 +127,15 @@ export class ApplicationDetailPage {
       });
   }
 
-  remove(): void {
+  async remove(): Promise<void> {
     if (this.deleting()) return;
-    if (!confirm(this.t('applicationDetail.danger.confirm'))) return;
+    const confirmed = await this.confirm.ask({
+      title: 'applicationDetail.danger.confirm.title',
+      message: 'applicationDetail.danger.confirm.body',
+      confirmLabel: 'common.delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     this.deleting.set(true);
     this.applications.remove(this.id).subscribe({
       next: () => this.router.navigate(['/applications']),

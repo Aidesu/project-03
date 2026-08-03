@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { InterviewOutcome, Prisma, XpReason } from '@prisma/client';
 import { paginated, skipTake } from '../common/pagination';
-import { GamificationService } from '../gamification/gamification.service';
+import {
+  GamificationService,
+  oncePer,
+} from '../gamification/gamification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { QueryInterviewsDto } from './dto/query-interviews.dto';
@@ -63,7 +66,10 @@ export class InterviewsService {
         userId,
         XpReason.INTERVIEW_COMPLETED,
         XP_INTERVIEW_COMPLETED,
-        dto.applicationId,
+        {
+          applicationId: dto.applicationId,
+          dedupeKey: oncePer(XpReason.INTERVIEW_COMPLETED, interview.id),
+        },
       );
     } else {
       // A scheduled interview earns no XP yet, but the interview count is
@@ -127,14 +133,20 @@ export class InterviewsService {
       include: INTERVIEW_INCLUDE,
     });
 
-    // Award once, when the interview first transitions into a completed outcome.
+    // Award on the transition into a completed outcome — and key it on the
+    // interview, so walking it back to PENDING and completing it again pays
+    // nothing. Per interview, not per application: a pipeline legitimately has
+    // a screening, a technical and a final round, and each is worth its XP.
     const newOutcome = dto.outcome ?? existing.outcome;
     if (!isCompleted(existing.outcome) && isCompleted(newOutcome)) {
       await this.gamification.award(
         userId,
         XpReason.INTERVIEW_COMPLETED,
         XP_INTERVIEW_COMPLETED,
-        existing.applicationId,
+        {
+          applicationId: existing.applicationId,
+          dedupeKey: oncePer(XpReason.INTERVIEW_COMPLETED, existing.id),
+        },
       );
     }
 

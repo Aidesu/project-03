@@ -162,6 +162,10 @@ enum XpReason {
   DAILY_GOAL
   WEEKLY_GOAL
   ACHIEVEMENT_UNLOCKED
+  /// Reversal entry: the only reason that carries a negative amount. Deleting
+  /// an application takes back what it earned, so the ledger still sums to the
+  /// profile total instead of crediting work that no longer exists.
+  APPLICATION_DELETED
   OTHER
 }
 
@@ -531,9 +535,16 @@ model XpEvent {
   application   JobApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
   amount        Int
   reason        XpReason
+  /// Idempotency key for an award that must land at most once per subject
+  /// (a milestone on one application, one interview, one achievement). NULL
+  /// means repeatable — and NULLs never collide, so the unique index below
+  /// leaves those rows alone. This is what stops a status flip-flop from
+  /// paying out twice; see GamificationService.grantXp.
+  dedupeKey     String?
   description   String?
   createdAt     DateTime        @default(now())
 
+  @@unique([userId, dedupeKey])
   @@index([userId])
   @@index([userId, createdAt])
 }

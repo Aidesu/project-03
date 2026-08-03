@@ -10,6 +10,7 @@ export const fr: Record<TranslationKey, string> = {
   'common.saveChanges': 'Enregistrer les modifications',
   'common.saving': 'Enregistrement…',
   'common.cancel': 'Annuler',
+  'common.confirm': 'Confirmer',
   'common.edit': 'Modifier',
   'common.delete': 'Supprimer',
   'common.deleting': 'Suppression…',
@@ -167,6 +168,7 @@ export const fr: Record<TranslationKey, string> = {
   'xp.reason.DAILY_GOAL': 'Objectif quotidien',
   'xp.reason.WEEKLY_GOAL': 'Objectif hebdomadaire',
   'xp.reason.ACHIEVEMENT_UNLOCKED': 'Succès débloqué',
+  'xp.reason.APPLICATION_DELETED': 'Candidature supprimée',
   'xp.reason.OTHER': 'Activité',
 
   // ---- Player card -----------------------------------------------------
@@ -249,7 +251,7 @@ export const fr: Record<TranslationKey, string> = {
   // ---- Application detail ---------------------------------------------
   'applicationDetail.back': 'Candidatures',
   'applicationDetail.notFound': 'Candidature introuvable.',
-  'applicationDetail.viewOffer': 'Voir l’offre',
+  'applicationDetail.website': 'Site web',
   'applicationDetail.advance.title': 'Faire avancer',
   'applicationDetail.advance.newStatus': 'Nouveau statut',
   'applicationDetail.advance.note': 'Note (optionnel)',
@@ -278,7 +280,9 @@ export const fr: Record<TranslationKey, string> = {
   'applicationDetail.history.title': 'Historique',
   'applicationDetail.danger.title': 'Zone sensible',
   'applicationDetail.danger.delete': 'Supprimer la candidature',
-  'applicationDetail.danger.confirm': 'Supprimer définitivement cette candidature ?',
+  'applicationDetail.danger.confirm.title': 'Supprimer cette candidature ?',
+  'applicationDetail.danger.confirm.body':
+    'Ses entretiens, son historique de statut et ses rappels partent avec elle, et l’XP qu’elle a rapportée est reprise. Les succès débloqués restent acquis.',
 
   // ---- Network ---------------------------------------------------------
   'network.title': 'Réseau',
@@ -303,9 +307,12 @@ export const fr: Record<TranslationKey, string> = {
   'network.companyContacts': '{count, plural, one {# contact} other {# contacts}}',
   'network.deleteCompanyAria': 'Supprimer l’entreprise',
   'network.deleteContactAria': 'Supprimer le contact',
-  'network.confirmDeleteCompany':
-    'Supprimer « {name} » ? Les candidatures et contacts liés sont conservés, mais ils perdent ce lien.',
-  'network.confirmDeleteContact': 'Supprimer le contact « {name} » ?',
+  'network.confirmDeleteCompany.title': 'Supprimer « {name} » ?',
+  'network.confirmDeleteCompany.body':
+    'Les candidatures et contacts liés sont conservés, mais ils perdent ce lien.',
+  'network.confirmDeleteContact.title': 'Supprimer « {name} » ?',
+  'network.confirmDeleteContact.body':
+    'Les entretiens et candidatures qui référençaient ce contact sont conservés, mais ils perdent ce lien.',
 
   // ---- Company detail --------------------------------------------------
   'companyDetail.back': 'Réseau',
@@ -319,8 +326,9 @@ export const fr: Record<TranslationKey, string> = {
   'companyDetail.applications.empty': 'Aucune candidature liée à cette entreprise.',
   'companyDetail.appliedOn': 'Candidaté le {date}',
   'companyDetail.notSentYet': 'Pas encore envoyée',
-  'companyDetail.confirmDelete':
-    'Supprimer « {name} » ? Les {applications, plural, one {# candidature liée} other {# candidatures liées}} et {contacts, plural, one {# contact lié} other {# contacts liés}} sont conservés, mais ils perdent ce lien.',
+  'companyDetail.confirmDelete.title': 'Supprimer « {name} » ?',
+  'companyDetail.confirmDelete.body':
+    'Les {applications, plural, one {# candidature liée} other {# candidatures liées}} et {contacts, plural, one {# contact lié} other {# contacts liés}} sont conservés, mais ils perdent ce lien.',
 
   // ---- Contact detail --------------------------------------------------
   'contactDetail.back': 'Réseau',
@@ -411,7 +419,9 @@ export const fr: Record<TranslationKey, string> = {
     'Impossible de copier automatiquement — sélectionne le texte manuellement.',
   'emailTemplates.empty.title': 'Aucun modèle pour l’instant.',
   'emailTemplates.empty.body': 'Crée ton premier modèle de relance ou de remerciement.',
-  'emailTemplates.confirmDelete': 'Supprimer le modèle « {name} » ?',
+  'emailTemplates.confirmDelete.title': 'Supprimer « {name} » ?',
+  'emailTemplates.confirmDelete.body':
+    'Ce modèle est supprimé définitivement. Rien d’autre n’est affecté.',
 
   'templateVar.poste': 'Intitulé du poste',
   'templateVar.entreprise': 'Nom de l’entreprise',

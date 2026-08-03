@@ -1,0 +1,63 @@
+@if (request(); as request) {
+  <!-- Above app-modal (z-50): a confirmation can be raised from inside one. -->
+  <div
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-overlay p-4 backdrop-blur-sm"
+    appBackdropDismiss
+    (dismissed)="respond(false)"
+  >
+    <div
+      #panel
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+      aria-describedby="confirm-dialog-message"
+      class="w-full max-w-md rounded-2xl border border-slate-100 bg-surface p-6 shadow-xl dark:border-slate-700"
+    >
+      <div class="flex gap-4">
+        <span
+          class="confirm-glyph"
+          [class.confirm-glyph--danger]="request.tone === 'danger'"
+          aria-hidden="true"
+        ></span>
+
+        <div class="min-w-0 flex-1">
+          <h2
+            id="confirm-dialog-title"
+            class="text-base font-semibold text-slate-800"
+          >
+            {{ t(request.title, request.params) }}
+          </h2>
+          <p
+            id="confirm-dialog-message"
+            class="mt-2 text-sm leading-relaxed text-slate-600"
+          >
+            {{ t(request.message, request.params) }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Reversed on narrow screens so the confirm action sits under the
+           thumb, while the DOM order keeps Cancel first for the keyboard. -->
+      <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button
+          #cancelButton
+          type="button"
+          (click)="respond(false)"
+          class="btn btn--secondary"
+        >
+          {{ t(request.cancelLabel) }}
+        </button>
+        <button
+          #confirmButton
+          type="button"
+          (click)="respond(true)"
+          class="btn"
+          [class.btn--destructive]="request.tone === 'danger'"
+          [class.btn--primary]="request.tone !== 'danger'"
+        >
+          {{ t(request.confirmLabel) }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -10,6 +10,7 @@ export const es: Record<TranslationKey, string> = {
   'common.saveChanges': 'Guardar los cambios',
   'common.saving': 'Guardando…',
   'common.cancel': 'Cancelar',
+  'common.confirm': 'Confirmar',
   'common.edit': 'Editar',
   'common.delete': 'Eliminar',
   'common.deleting': 'Eliminando…',
@@ -169,6 +170,7 @@ export const es: Record<TranslationKey, string> = {
   'xp.reason.DAILY_GOAL': 'Objetivo diario',
   'xp.reason.WEEKLY_GOAL': 'Objetivo semanal',
   'xp.reason.ACHIEVEMENT_UNLOCKED': 'Logro desbloqueado',
+  'xp.reason.APPLICATION_DELETED': 'Candidatura eliminada',
   'xp.reason.OTHER': 'Actividad',
 
   // ---- Player card -----------------------------------------------------
@@ -252,7 +254,7 @@ export const es: Record<TranslationKey, string> = {
   // ---- Application detail ---------------------------------------------
   'applicationDetail.back': 'Candidaturas',
   'applicationDetail.notFound': 'Candidatura no encontrada.',
-  'applicationDetail.viewOffer': 'Ver la oferta',
+  'applicationDetail.website': 'Sitio web',
   'applicationDetail.advance.title': 'Hacerla avanzar',
   'applicationDetail.advance.newStatus': 'Nuevo estado',
   'applicationDetail.advance.note': 'Nota (opcional)',
@@ -281,7 +283,9 @@ export const es: Record<TranslationKey, string> = {
   'applicationDetail.history.title': 'Historial',
   'applicationDetail.danger.title': 'Zona sensible',
   'applicationDetail.danger.delete': 'Eliminar la candidatura',
-  'applicationDetail.danger.confirm': '¿Eliminar definitivamente esta candidatura?',
+  'applicationDetail.danger.confirm.title': '¿Eliminar esta candidatura?',
+  'applicationDetail.danger.confirm.body':
+    'Sus entrevistas, su historial de estado y sus recordatorios se eliminan con ella, y la XP que aportó se retira. Los logros desbloqueados se conservan.',
 
   // ---- Network ---------------------------------------------------------
   'network.title': 'Red',
@@ -306,9 +310,12 @@ export const es: Record<TranslationKey, string> = {
   'network.companyContacts': '{count, plural, one {# contacto} other {# contactos}}',
   'network.deleteCompanyAria': 'Eliminar la empresa',
   'network.deleteContactAria': 'Eliminar el contacto',
-  'network.confirmDeleteCompany':
-    '¿Eliminar «{name}»? Las candidaturas y los contactos vinculados se conservan, pero pierden este vínculo.',
-  'network.confirmDeleteContact': '¿Eliminar el contacto «{name}»?',
+  'network.confirmDeleteCompany.title': '¿Eliminar «{name}»?',
+  'network.confirmDeleteCompany.body':
+    'Las candidaturas y los contactos vinculados se conservan, pero pierden este vínculo.',
+  'network.confirmDeleteContact.title': '¿Eliminar «{name}»?',
+  'network.confirmDeleteContact.body':
+    'Las entrevistas y candidaturas que hacían referencia a este contacto se conservan, pero pierden este vínculo.',
 
   // ---- Company detail --------------------------------------------------
   'companyDetail.back': 'Red',
@@ -322,8 +329,9 @@ export const es: Record<TranslationKey, string> = {
   'companyDetail.applications.empty': 'No hay candidaturas vinculadas a esta empresa.',
   'companyDetail.appliedOn': 'Enviada el {date}',
   'companyDetail.notSentYet': 'Todavía sin enviar',
-  'companyDetail.confirmDelete':
-    '¿Eliminar «{name}»? {applications, plural, one {La # candidatura vinculada} other {Las # candidaturas vinculadas}} y {contacts, plural, one {el # contacto vinculado} other {los # contactos vinculados}} se conservan, pero pierden este vínculo.',
+  'companyDetail.confirmDelete.title': '¿Eliminar «{name}»?',
+  'companyDetail.confirmDelete.body':
+    '{applications, plural, one {La # candidatura vinculada} other {Las # candidaturas vinculadas}} y {contacts, plural, one {el # contacto vinculado} other {los # contactos vinculados}} se conservan, pero pierden este vínculo.',
 
   // ---- Contact detail --------------------------------------------------
   'contactDetail.back': 'Red',
@@ -414,7 +422,9 @@ export const es: Record<TranslationKey, string> = {
   'emailTemplates.empty.title': 'Todavía no hay plantillas.',
   'emailTemplates.empty.body':
     'Crea tu primera plantilla de seguimiento o de agradecimiento.',
-  'emailTemplates.confirmDelete': '¿Eliminar la plantilla «{name}»?',
+  'emailTemplates.confirmDelete.title': '¿Eliminar «{name}»?',
+  'emailTemplates.confirmDelete.body':
+    'Esta plantilla se elimina de forma permanente. No afecta a nada más.',
 
   'templateVar.poste': 'Título del puesto',
   'templateVar.entreprise': 'Nombre de la empresa',

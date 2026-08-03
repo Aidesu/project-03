@@ -17,7 +17,10 @@ import {
 import { UserTimezoneService } from '../common/user-timezone.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
-import { GamificationService } from '../gamification/gamification.service';
+import {
+  GamificationService,
+  oncePer,
+} from '../gamification/gamification.service';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { DailyStatsQueryDto } from './dto/daily-stats-query.dto';
@@ -135,7 +138,10 @@ export class ApplicationsService {
       userId,
       XpReason.APPLICATION_CREATED,
       XP_APPLICATION_CREATED,
-      application.id,
+      {
+        applicationId: application.id,
+        dedupeKey: oncePer(XpReason.APPLICATION_CREATED, application.id),
+      },
     );
     const milestone = STATUS_XP[status];
     if (milestone) {
@@ -143,7 +149,10 @@ export class ApplicationsService {
         userId,
         milestone.reason,
         milestone.amount,
-        application.id,
+        {
+          applicationId: application.id,
+          dedupeKey: oncePer(milestone.reason, application.id),
+        },
       );
     }
 
@@ -292,11 +301,14 @@ export class ApplicationsService {
     if (from !== to) {
       const milestone = STATUS_XP[to];
       if (milestone) {
+        // Keyed on the application: reaching a stage is worth XP the first
+        // time and only the first time, however many times the status is
+        // walked back and forward again.
         await this.gamification.award(
           userId,
           milestone.reason,
           milestone.amount,
-          id,
+          { applicationId: id, dedupeKey: oncePer(milestone.reason, id) },
         );
       }
     }
@@ -306,7 +318,14 @@ export class ApplicationsService {
 
   async remove(userId: number, id: string): Promise<void> {
     await this.findOwnedOrThrow(userId, id);
-    await this.prisma.jobApplication.delete({ where: { id } });
+    // One transaction, and the revoke goes first: XP kept for an application
+    // that no longer exists is unearned credit — and the free reset that made
+    // delete-then-recreate pay every milestone a second time. Taking the XP
+    // without the delete going through would be worse, hence the atomicity.
+    await this.prisma.$transaction(async (tx) => {
+      await this.gamification.revokeForApplication(tx, userId, id);
+      await tx.jobApplication.delete({ where: { id } });
+    });
   }
 
   /**

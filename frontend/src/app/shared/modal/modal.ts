@@ -1,5 +1,6 @@
 import { Component, HostListener, inject, input, output } from '@angular/core';
 import { I18nService } from '../../core/i18n';
+import { BackdropDismiss } from '../backdrop-dismiss/backdrop-dismiss';
 
 /**
  * Centered dialog with a dimmed backdrop. Purely presentational: the parent
@@ -7,6 +8,7 @@ import { I18nService } from '../../core/i18n';
  */
 @Component({
   selector: 'app-modal',
+  imports: [BackdropDismiss],
   templateUrl: './modal.html',
 })
 export class Modal {

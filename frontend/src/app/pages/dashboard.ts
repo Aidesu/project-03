@@ -27,6 +27,7 @@ const XP_REASON_KEYS = {
   DAILY_GOAL: 'xp.reason.DAILY_GOAL',
   WEEKLY_GOAL: 'xp.reason.WEEKLY_GOAL',
   ACHIEVEMENT_UNLOCKED: 'xp.reason.ACHIEVEMENT_UNLOCKED',
+  APPLICATION_DELETED: 'xp.reason.APPLICATION_DELETED',
   OTHER: 'xp.reason.OTHER',
 } satisfies Record<string, TranslationKey>;
 
@@ -42,6 +43,7 @@ const XP_REASON_ACCENT: Record<string, string> = {
   DAILY_GOAL: 'bg-brand-400',
   WEEKLY_GOAL: 'bg-aurora-violet',
   ACHIEVEMENT_UNLOCKED: 'bg-xp-500',
+  APPLICATION_DELETED: 'bg-slate-400',
   OTHER: 'bg-slate-300',
 };
 
@@ -308,6 +310,19 @@ export class Dashboard implements AfterViewInit, OnDestroy {
 
   reasonAccent(reason: string): string {
     return XP_REASON_ACCENT[reason] ?? 'bg-slate-300';
+  }
+
+  /**
+   * Ledger amounts are signed: deleting an application withdraws what it
+   * earned. The sign comes from the formatter rather than a literal `+`, so a
+   * withdrawal reads as a real minus sign in the user's locale.
+   */
+  formatXp(amount: number): string {
+    return this.i18n.number(amount, { signDisplay: 'always' });
+  }
+
+  xpAccent(amount: number): string {
+    return amount < 0 ? 'text-slate-400' : 'text-xp-600';
   }
 
   heatCellClass(level: number): string {

@@ -1,0 +1,11 @@
+-- Reversal entry for XP earned by an application that is being deleted.
+--
+-- Postgres 12+ allows ADD VALUE inside a transaction as long as the new label
+-- is not used in that same transaction; this migration only declares it.
+--
+-- Additive and forward-only: an enum label cannot be dropped in Postgres, so
+-- rolling this back means restoring from a dump. Nothing reads the label yet at
+-- this point, so applying it early is safe.
+-- Positioned to match the declaration order in schema.prisma, so the enum reads
+-- the same in the database as in the model.
+ALTER TYPE "XpReason" ADD VALUE 'APPLICATION_DELETED' BEFORE 'OTHER';

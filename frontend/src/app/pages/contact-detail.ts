@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { avatarColor } from '../core/avatar-color';
 import { ContactsService } from '../core/contacts.service';
+import { ConfirmService } from '../core/confirm.service';
 import {
   INTERVIEW_OUTCOME_KEYS,
   INTERVIEW_TYPE_KEYS,
@@ -21,6 +22,7 @@ export class ContactDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly contactsApi = inject(ContactsService);
+  private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
 
   readonly t = this.i18n.t;
@@ -88,10 +90,17 @@ export class ContactDetailPage {
     this.load();
   }
 
-  remove(): void {
+  async remove(): Promise<void> {
     const d = this.detail();
     if (!d || this.deleting()) return;
-    if (!confirm(this.t('network.confirmDeleteContact', { name: this.fullName }))) return;
+    const confirmed = await this.confirm.ask({
+      title: 'network.confirmDeleteContact.title',
+      message: 'network.confirmDeleteContact.body',
+      params: { name: this.fullName },
+      confirmLabel: 'common.delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     this.deleting.set(true);
     this.contactsApi.remove(d.id).subscribe({
       next: () => void this.router.navigateByUrl('/network?tab=contacts'),

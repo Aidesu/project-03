@@ -297,7 +297,9 @@
                 reasonLabel(event.reason)
               }}</span>
             </div>
-            <span class="font-mono text-sm font-semibold text-xp-600">+{{ event.amount }} XP</span>
+            <span class="font-mono text-sm font-semibold" [class]="xpAccent(event.amount)"
+              >{{ formatXp(event.amount) }} XP</span
+            >
           </li>
         }
       </ul>

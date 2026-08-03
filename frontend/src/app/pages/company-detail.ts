@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { STATUS_BADGE, STATUS_KEYS } from '../core/application-status';
 import { avatarColor } from '../core/avatar-color';
 import { CompaniesService } from '../core/companies.service';
+import { ConfirmService } from '../core/confirm.service';
 import { ContactsService } from '../core/contacts.service';
 import { COMPANY_SIZE_KEYS, labelOf } from '../core/enums';
 import { externalUrl, urlLabel } from '../core/external-url';
@@ -20,6 +21,7 @@ export class CompanyDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly companiesApi = inject(CompaniesService);
+  private readonly confirm = inject(ConfirmService);
   private readonly contactsApi = inject(ContactsService);
   private readonly i18n = inject(I18nService);
 
@@ -104,29 +106,33 @@ export class CompanyDetailPage {
     this.load();
   }
 
-  removeContact(c: Contact): void {
-    if (
-      !confirm(this.t('network.confirmDeleteContact', { name: this.contactName(c) }))
-    ) {
-      return;
-    }
+  async removeContact(c: Contact): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'network.confirmDeleteContact.title',
+      message: 'network.confirmDeleteContact.body',
+      params: { name: this.contactName(c) },
+      confirmLabel: 'common.delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     this.contactsApi.remove(c.id).subscribe({ next: () => this.load() });
   }
 
-  remove(): void {
+  async remove(): Promise<void> {
     const d = this.detail();
     if (!d || this.deleting()) return;
-    if (
-      !confirm(
-        this.t('companyDetail.confirmDelete', {
-          name: d.name,
-          applications: d._count.applications,
-          contacts: d._count.contacts,
-        }),
-      )
-    ) {
-      return;
-    }
+    const confirmed = await this.confirm.ask({
+      title: 'companyDetail.confirmDelete.title',
+      message: 'companyDetail.confirmDelete.body',
+      params: {
+        name: d.name,
+        applications: d._count.applications,
+        contacts: d._count.contacts,
+      },
+      confirmLabel: 'common.delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     this.deleting.set(true);
     this.companiesApi.remove(d.id).subscribe({
       next: () => void this.router.navigateByUrl('/network'),

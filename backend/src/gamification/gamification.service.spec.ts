@@ -1,4 +1,4 @@
-import { XpReason } from '@prisma/client';
+import { Prisma, XpReason } from '@prisma/client';
 import { UserTimezoneService } from '../common/user-timezone.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from './gamification.service';
@@ -6,6 +6,8 @@ import { GamificationService } from './gamification.service';
 const USER_ID = 1;
 const TIME_ZONE = 'Pacific/Auckland'; // UTC+13 in January
 const ACHIEVEMENT_ID = '44444444-4444-4444-8444-444444444444';
+const APPLICATION_ID = '55555555-5555-4555-8555-555555555555';
+const KEY = `${XpReason.INTERVIEW_SCHEDULED}:${APPLICATION_ID}`;
 
 /** The profile fields `award` reads back when updating the streak. */
 const profile = (overrides: {
@@ -37,7 +39,7 @@ interface PrismaMock {
     upsert: jest.Mock;
     update: jest.Mock;
   };
-  xpEvent: { create: jest.Mock; findMany: jest.Mock };
+  xpEvent: { createMany: jest.Mock; findMany: jest.Mock; aggregate: jest.Mock };
   achievement: { findMany: jest.Mock };
   userAchievement: { findMany: jest.Mock; createMany: jest.Mock };
   jobApplication: { count: jest.Mock };
@@ -57,7 +59,12 @@ describe('GamificationService', () => {
         upsert: jest.fn().mockResolvedValue({ xp: 120, level: 2 }),
         update: jest.fn(),
       },
-      xpEvent: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      xpEvent: {
+        // Default: the ledger row was ours to insert, i.e. no dedupe hit.
+        createMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findMany: jest.fn().mockResolvedValue([]),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
       achievement: { findMany: jest.fn().mockResolvedValue([]) },
       userAchievement: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -151,6 +158,86 @@ describe('GamificationService', () => {
     });
   });
 
+  describe('award — dedupe key', () => {
+    const awardMilestone = async (dedupeKey?: string) => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-01-14T22:00:00.000Z'));
+      await service.award(USER_ID, XpReason.INTERVIEW_SCHEDULED, 30, {
+        applicationId: APPLICATION_ID,
+        dedupeKey,
+      });
+    };
+
+    it('carries the key into the ledger insert, which absorbs the duplicate', async () => {
+      // The unique index is the gate: a check-then-act would let two
+      // concurrent transitions both find nothing and both pay out.
+      await awardMilestone(KEY);
+
+      expect(prisma.xpEvent.createMany).toHaveBeenCalledWith({
+        data: {
+          userId: USER_ID,
+          reason: XpReason.INTERVIEW_SCHEDULED,
+          amount: 30,
+          applicationId: APPLICATION_ID,
+          dedupeKey: KEY,
+        },
+        skipDuplicates: true,
+      });
+    });
+
+    it('credits nothing when the milestone was already paid', async () => {
+      // What an APPLIED → INTERVIEW → APPLIED → INTERVIEW loop now hits.
+      prisma.xpEvent.createMany.mockResolvedValue({ count: 0 });
+
+      await awardMilestone(KEY);
+
+      expect(prisma.gamificationProfile.upsert).not.toHaveBeenCalled();
+      expect(prisma.gamificationProfile.update).not.toHaveBeenCalled();
+    });
+
+    it('does not let a replayed milestone keep a dead streak alive', async () => {
+      prisma.gamificationProfile.findUnique.mockResolvedValue(
+        profile({
+          lastActiveOn: new Date('2026-01-10T00:00:00.000Z'),
+          currentStreakDays: 6,
+        }),
+      );
+      prisma.xpEvent.createMany.mockResolvedValue({ count: 0 });
+
+      await awardMilestone(KEY);
+
+      expect(prisma.gamificationProfile.upsert).not.toHaveBeenCalled();
+    });
+
+    it('still re-evaluates achievements after a duplicate', async () => {
+      // The XP was already paid, but the metric behind an achievement can have
+      // moved since — the unlock must not wait for the next fresh award.
+      prisma.xpEvent.createMany.mockResolvedValue({ count: 0 });
+      prisma.achievement.findMany.mockResolvedValue([
+        { ...catalogEntry(), xpReward: 0 },
+      ]);
+      prisma.jobApplication.count.mockResolvedValue(1);
+
+      await awardMilestone(KEY);
+
+      expect(prisma.userAchievement.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skipDuplicates: true }),
+      );
+    });
+
+    it('leaves a repeatable award unkeyed, so it never collides', async () => {
+      // NULLs do not collide in a Postgres unique index — that is what keeps
+      // the non-milestone awards repeatable.
+      await awardMilestone(undefined);
+
+      expect(prisma.xpEvent.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ dedupeKey: null }),
+        }),
+      );
+      expect(prisma.gamificationProfile.upsert).toHaveBeenCalled();
+    });
+  });
+
   describe('award — streak', () => {
     it('stores the activity on the user local day, not the UTC one', async () => {
       // 22:00Z on the 14th is 11:00 on the 15th in Auckland.
@@ -224,6 +311,122 @@ describe('GamificationService', () => {
     });
   });
 
+  describe('revokeForApplication', () => {
+    const REVERSAL_KEY = `${XpReason.APPLICATION_DELETED}:${APPLICATION_ID}`;
+
+    /**
+     * The application earned `earned` XP and the user currently holds `held`.
+     * `cachedLevel` is what the post-decrement row still carries, so a test can
+     * choose whether the level cache comes back stale.
+     */
+    const holding = (earned: number, held: number, cachedLevel = 2) => {
+      prisma.xpEvent.aggregate.mockResolvedValue({ _sum: { amount: earned } });
+      prisma.gamificationProfile.findUnique.mockResolvedValue({ xp: held });
+      prisma.gamificationProfile.update.mockResolvedValue({
+        xp: held - Math.min(earned, held),
+        level: cachedLevel,
+      });
+    };
+
+    const revoke = () =>
+      service.revokeForApplication(
+        prisma as unknown as Prisma.TransactionClient,
+        USER_ID,
+        APPLICATION_ID,
+      );
+
+    it('writes a negative reversal instead of erasing the ledger rows', async () => {
+      // The ledger has to keep summing to the profile total — that is the whole
+      // reason the total is recomputable.
+      holding(60, 200);
+
+      await expect(revoke()).resolves.toBe(60);
+
+      expect(prisma.xpEvent.createMany).toHaveBeenCalledWith({
+        data: {
+          userId: USER_ID,
+          reason: XpReason.APPLICATION_DELETED,
+          amount: -60,
+          applicationId: null,
+          dedupeKey: REVERSAL_KEY,
+        },
+        skipDuplicates: true,
+      });
+      expect(prisma.gamificationProfile.update).toHaveBeenCalledWith({
+        where: { userId: USER_ID },
+        data: { xp: { decrement: 60 } },
+      });
+    });
+
+    it('totals only that application, scoped to the caller', async () => {
+      holding(60, 200);
+
+      await revoke();
+
+      expect(prisma.xpEvent.aggregate).toHaveBeenCalledWith({
+        where: {
+          userId: USER_ID,
+          applicationId: APPLICATION_ID,
+          amount: { gt: 0 },
+        },
+        _sum: { amount: true },
+      });
+    });
+
+    it('never drives the total below zero', async () => {
+      // Earned 60, but an earlier reversal already took the total down to 25.
+      holding(60, 25);
+
+      await expect(revoke()).resolves.toBe(25);
+
+      expect(prisma.xpEvent.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ amount: -25 }),
+        }),
+      );
+    });
+
+    it('drops the level when the withdrawal crosses a boundary', async () => {
+      // 220 - 60 = 160, which is level 2 — but the cached column still says 3.
+      holding(60, 220, 3);
+
+      await revoke();
+
+      expect(prisma.gamificationProfile.update).toHaveBeenLastCalledWith({
+        where: { userId: USER_ID },
+        data: { level: 2 },
+      });
+    });
+
+    it('withdraws nothing when the application never earned any', async () => {
+      holding(0, 200);
+
+      await expect(revoke()).resolves.toBe(0);
+
+      expect(prisma.xpEvent.createMany).not.toHaveBeenCalled();
+      expect(prisma.gamificationProfile.update).not.toHaveBeenCalled();
+    });
+
+    it('withdraws once when two deletes race', async () => {
+      holding(60, 200);
+      // The unique (userId, dedupeKey) index absorbed the second reversal.
+      prisma.xpEvent.createMany.mockResolvedValue({ count: 0 });
+
+      await expect(revoke()).resolves.toBe(0);
+
+      expect(prisma.gamificationProfile.update).not.toHaveBeenCalled();
+    });
+
+    it('leaves unlocked achievements alone', async () => {
+      // Re-locking would let the same achievement be earned a second time.
+      holding(60, 200);
+
+      await revoke();
+
+      expect(prisma.userAchievement.createMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('listAchievements', () => {
     it('never writes, even when a threshold is met', async () => {
       prisma.achievement.findMany.mockResolvedValue([catalogEntry()]);
@@ -232,7 +435,7 @@ describe('GamificationService', () => {
       const results = await service.listAchievements(USER_ID);
 
       expect(prisma.userAchievement.createMany).not.toHaveBeenCalled();
-      expect(prisma.xpEvent.create).not.toHaveBeenCalled();
+      expect(prisma.xpEvent.createMany).not.toHaveBeenCalled();
       expect(results).toEqual([
         expect.objectContaining({ progress: 1, unlockedAt: null }),
       ]);
@@ -262,13 +465,15 @@ describe('GamificationService', () => {
       expect(prisma.userAchievement.createMany).toHaveBeenCalledWith(
         expect.objectContaining({ skipDuplicates: true }),
       );
-      expect(prisma.xpEvent.create).toHaveBeenCalledWith({
+      expect(prisma.xpEvent.createMany).toHaveBeenCalledWith({
         data: {
           userId: USER_ID,
           reason: XpReason.ACHIEVEMENT_UNLOCKED,
           amount: 50,
           applicationId: null,
+          dedupeKey: `${XpReason.ACHIEVEMENT_UNLOCKED}:${ACHIEVEMENT_ID}`,
         },
+        skipDuplicates: true,
       });
     });
 
@@ -280,7 +485,7 @@ describe('GamificationService', () => {
 
       await service.syncAchievements(USER_ID);
 
-      expect(prisma.xpEvent.create).not.toHaveBeenCalled();
+      expect(prisma.xpEvent.createMany).not.toHaveBeenCalled();
     });
 
     it('skips an achievement already unlocked', async () => {
@@ -296,7 +501,7 @@ describe('GamificationService', () => {
       await service.syncAchievements(USER_ID);
 
       expect(prisma.userAchievement.createMany).not.toHaveBeenCalled();
-      expect(prisma.xpEvent.create).not.toHaveBeenCalled();
+      expect(prisma.xpEvent.createMany).not.toHaveBeenCalled();
     });
 
     it('leaves an unmet threshold locked', async () => {
