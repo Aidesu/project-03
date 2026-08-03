@@ -52,6 +52,10 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Without this, SIGTERM kills the process before onModuleDestroy runs, so
+  // the Prisma pool and the Redis connection are never closed cleanly.
+  app.enableShutdownHooks();
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 }

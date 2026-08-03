@@ -12,6 +12,7 @@ const baseProd = {
   APP_URL: 'https://app.example.com',
   SMTP_HOST: 'smtp.example.com',
   MAIL_FROM: 'JobQuest <no-reply@app.example.com>',
+  REDIS_URL: 'rediss://:s3cret@redis.example.com:6380',
   JWT_ACCESS_SECRET: STRONG_A,
   JWT_REFRESH_SECRET: STRONG_B,
   CSRF_SECRET: STRONG_C,
@@ -122,6 +123,40 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...baseProd, MAIL_FROM: '' })).toThrow(
       /MAIL_FROM is required/,
     );
+  });
+
+  // In-memory rate limiting resets on every deploy and multiplies by the number
+  // of instances, so in production the counters have to be shared.
+  it('refuses to boot in production without a Redis for the rate limiter', () => {
+    const { REDIS_URL, ...rest } = baseProd;
+    void REDIS_URL;
+    expect(() => validateEnv(rest)).toThrow(/REDIS_URL is required/);
+  });
+
+  it('refuses a malformed, wrong-scheme, or unauthenticated REDIS_URL', () => {
+    expect(() => validateEnv({ ...baseProd, REDIS_URL: 'redis' })).toThrow(
+      /REDIS_URL must be a valid URL/,
+    );
+    expect(() =>
+      validateEnv({ ...baseProd, REDIS_URL: 'http://redis.example.com:6379' }),
+    ).toThrow(/redis:\/\/ or rediss:\/\//);
+    expect(() =>
+      validateEnv({ ...baseProd, REDIS_URL: 'redis://redis.example.com:6379' }),
+    ).toThrow(/must include a password/);
+  });
+
+  it('accepts an unauthenticated Redis outside production', () => {
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'development',
+        DATABASE_URL: 'postgresql://u:p@localhost:5432/app',
+        JWT_ACCESS_SECRET: 'a',
+        JWT_REFRESH_SECRET: 'b',
+        CSRF_SECRET: 'c',
+        EMAIL_TOKEN_SECRET: 'd',
+        REDIS_URL: 'redis://redis:6379',
+      }),
+    ).not.toThrow();
   });
 
   it('reports every problem at once rather than one per restart', () => {
