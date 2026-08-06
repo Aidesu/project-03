@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* Self-hosted @font-face rules; regenerate with `node scripts/fetch-fonts.mjs`. */
+@import './fonts.css';
 
 /* Theme is an explicit choice on <html>, not a media query: the user can
    disagree with their OS, and the switch has to mean something. */

@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 import {
   ApplicationDetail,
   ApplicationListItem,
@@ -84,6 +84,22 @@ export class ApplicationsService {
     return this.http.get<Paginated<ApplicationListItem>>('/api/applications', {
       params,
     });
+  }
+
+  /**
+   * Job title of this user's most recent application, for pre-filling the next
+   * one. The list defaults to `createdAt desc`, so one item is enough.
+   *
+   * Emits `null` instead of failing: a pre-fill must never block a form.
+   */
+  latestPosition(): Observable<string | null> {
+    return this.list({ page: 1, pageSize: 1 }).pipe(
+      map((page) => {
+        const position: unknown = page.items[0]?.position;
+        return typeof position === 'string' ? position.trim() || null : null;
+      }),
+      catchError(() => of(null)),
+    );
   }
 
   create(input: CreateApplicationInput): Observable<ApplicationListItem> {
