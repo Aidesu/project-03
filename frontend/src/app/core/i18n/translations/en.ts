@@ -526,6 +526,27 @@ export const en = {
   'profile.privacy.error': 'Your export could not be prepared. Please try again.',
   'profile.privacy.tooMany':
     'Too many exports requested. Please wait a moment before trying again.',
+  'profile.sessions.title': 'Active sessions',
+  'profile.sessions.body':
+    'The devices currently signed in to your account. If you do not recognise one, sign it out — it will have to log in again.',
+  'profile.sessions.loading': 'Loading your sessions…',
+  'profile.sessions.empty': 'No other device is signed in.',
+  'profile.sessions.currentBadge': 'This device',
+  'profile.sessions.unknownDevice': 'Unknown device',
+  'profile.sessions.signedInAt': 'Signed in:',
+  'profile.sessions.lastSeenAt': 'Last active:',
+  'profile.sessions.ip': 'IP:',
+  'profile.sessions.revoke': 'Sign out',
+  'profile.sessions.revokeAll':
+    '{count, plural, one {Sign out # other device} other {Sign out # other devices}}',
+  'profile.sessions.revokeConfirmTitle': 'Sign this device out?',
+  'profile.sessions.revokeConfirmBody':
+    '{device} will be signed out immediately and will have to log in again. Your data is not affected.',
+  'profile.sessions.revokeAllConfirmTitle': 'Sign out every other device?',
+  'profile.sessions.revokeAllConfirmBody':
+    '{count, plural, one {# other device will be signed out immediately.} other {# other devices will be signed out immediately.}} This device stays signed in, and your data is not affected.',
+  'profile.sessions.loadError': 'Your sessions could not be loaded.',
+  'profile.sessions.revokeError': 'That session could not be signed out. Try again.',
   'profile.danger.title': 'Danger zone',
   'profile.danger.body':
     'This permanently deletes your account and every piece of data attached to it (applications, companies, documents, email templates, progress). This action cannot be undone.',

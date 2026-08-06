@@ -2,7 +2,7 @@
 #
 # Data layer:
 #   - db      : PostgreSQL 16   (primary database, used by Prisma)
-#   - redis   : Redis 7         (cache / sessions / job queue for reminders & follow-ups)
+#   - redis   : Redis 7         (rate-limit counters, shared across API instances)
 #   - minio   : MinIO (S3 API)  (object storage for attachments: CVs, cover letters, offer PDFs)
 #   - mailpit : SMTP sink       (catches every outgoing mail -> http://localhost:8025)
 #

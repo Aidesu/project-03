@@ -35,10 +35,24 @@ interface UserResponse {
   user: User;
 }
 
+/** One signed-in device. `id` is the rotation family, not a single token row. */
+export interface ActiveSession {
+  id: string;
+  ip: string | null;
+  userAgent: string | null;
+  signedInAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+  current: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/users/me';
+  // Sessions live under /api/auth, not /api/users/me: the refresh cookie is
+  // path-scoped there, and the server needs it to tell this device apart.
+  private readonly sessionsBase = '/api/auth/sessions';
 
   updateAccount(input: UpdateAccountInput): Observable<UserResponse> {
     return this.http.patch<UserResponse>(this.base, input);
@@ -77,5 +91,18 @@ export class ProfileService {
    */
   exportData(): Observable<Blob> {
     return this.http.get(`${this.base}/export`, { responseType: 'blob' });
+  }
+
+  listSessions(): Observable<{ sessions: ActiveSession[] }> {
+    return this.http.get<{ sessions: ActiveSession[] }>(this.sessionsBase);
+  }
+
+  revokeSession(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.sessionsBase}/${id}`);
+  }
+
+  /** Signs out every other device; this one stays connected. */
+  revokeOtherSessions(): Observable<{ revoked: number }> {
+    return this.http.delete<{ revoked: number }>(this.sessionsBase);
   }
 }

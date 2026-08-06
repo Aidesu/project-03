@@ -37,6 +37,7 @@ enum AuditAction {
   ACCOUNT_DELETED
   REFRESH_TOKEN_REUSE_DETECTED
   DATA_EXPORTED
+  SESSION_REVOKED
 }
 
 enum AuditOutcome {
@@ -222,6 +223,12 @@ model RefreshSession {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String // sha256 of the opaque refresh token — the raw token is never stored
   familyId  String // rotation family; reusing a revoked token revokes the whole family
+  // When the family was opened, carried on every row of it. A device that stays
+  // signed in rotates every 15 minutes, so the row's own createdAt says when it
+  // last refreshed, not since when the user has been connected. Denormalised
+  // rather than derived from min(createdAt) so the answer survives the
+  // retention purge of the family's older rows.
+  familyCreatedAt DateTime @default(now())
   expiresAt DateTime
   revokedAt DateTime?
   userAgent String?
@@ -230,6 +237,8 @@ model RefreshSession {
 
   @@index([userId])
   @@index([familyId])
+  // Listing a user's active sessions, and the retention purge's dead-row scan.
+  @@index([userId, revokedAt, expiresAt])
 }
 
 // Single-use, short-lived tokens sent by e-mail: password recovery and address

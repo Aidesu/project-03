@@ -526,6 +526,28 @@ export const fr: Record<TranslationKey, string> = {
   'profile.privacy.error': 'Votre export n’a pas pu être préparé. Veuillez réessayer.',
   'profile.privacy.tooMany':
     'Trop d’exports demandés. Patientez un instant avant de réessayer.',
+  'profile.sessions.title': 'Sessions actives',
+  'profile.sessions.body':
+    'Les appareils actuellement connectés à votre compte. Si vous n’en reconnaissez pas un, déconnectez-le — il devra se reconnecter.',
+  'profile.sessions.loading': 'Chargement de vos sessions…',
+  'profile.sessions.empty': 'Aucun autre appareil n’est connecté.',
+  'profile.sessions.currentBadge': 'Cet appareil',
+  'profile.sessions.unknownDevice': 'Appareil inconnu',
+  'profile.sessions.signedInAt': 'Connecté le :',
+  'profile.sessions.lastSeenAt': 'Dernière activité :',
+  'profile.sessions.ip': 'IP :',
+  'profile.sessions.revoke': 'Déconnecter',
+  'profile.sessions.revokeAll':
+    '{count, plural, one {Déconnecter # autre appareil} other {Déconnecter les # autres appareils}}',
+  'profile.sessions.revokeConfirmTitle': 'Déconnecter cet appareil ?',
+  'profile.sessions.revokeConfirmBody':
+    '{device} sera déconnecté immédiatement et devra se reconnecter. Vos données ne sont pas affectées.',
+  'profile.sessions.revokeAllConfirmTitle': 'Déconnecter tous les autres appareils ?',
+  'profile.sessions.revokeAllConfirmBody':
+    '{count, plural, one {# autre appareil sera déconnecté immédiatement.} other {# autres appareils seront déconnectés immédiatement.}} Cet appareil reste connecté et vos données ne sont pas affectées.',
+  'profile.sessions.loadError': 'Vos sessions n’ont pas pu être chargées.',
+  'profile.sessions.revokeError':
+    'Cette session n’a pas pu être déconnectée. Réessayez.',
   'profile.danger.title': 'Zone de danger',
   'profile.danger.body':
     'Cette action supprime définitivement ton compte et toutes les données associées (candidatures, entreprises, documents, modèles d’email, progression). Cette action est irréversible.',

@@ -80,6 +80,45 @@ export function validateEnv(
     }
   }
 
+  // How long revoked/expired refresh sessions are kept. They carry an IP and a
+  // user agent, so this is a retention limit on personal data. Capped well
+  // below the audit window: the trail is what answers questions months later.
+  const sessionRetention = config.SESSION_RETENTION_DAYS;
+  if (sessionRetention !== undefined && sessionRetention !== '') {
+    const parsed = Number(sessionRetention);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
+      errors.push(
+        'SESSION_RETENTION_DAYS must be an integer between 1 and 365.',
+      );
+    }
+  }
+
+  // Backing store for the rate-limit counters. Without it the throttler counts
+  // in process memory: limits reset on every deploy and multiply by the number
+  // of instances, which is the difference between a real brute-force control
+  // and a decorative one.
+  const redisUrl = config.REDIS_URL;
+  if (isProd && !redisUrl) {
+    errors.push('REDIS_URL is required in production.');
+  }
+  if (typeof redisUrl === 'string' && redisUrl !== '') {
+    let parsed: URL | null = null;
+    try {
+      parsed = new URL(redisUrl);
+    } catch {
+      parsed = null;
+    }
+    if (parsed === null) {
+      errors.push('REDIS_URL must be a valid URL.');
+    } else if (parsed.protocol !== 'redis:' && parsed.protocol !== 'rediss:') {
+      errors.push('REDIS_URL must use the redis:// or rediss:// scheme.');
+    } else if (isProd && !parsed.password) {
+      // An unauthenticated Redis reachable from the app is a standing invitation
+      // to read and reset every counter.
+      errors.push('REDIS_URL must include a password in production.');
+    }
+  }
+
   if (isProd) {
     const rawOrigins =
       typeof config.CORS_ORIGIN === 'string' ? config.CORS_ORIGIN : '';

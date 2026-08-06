@@ -36,7 +36,7 @@ from a dev `Dockerfile.dev`, bind-mount `src/` from the host, and hot-reload on 
 | Service    | Image / build          | Purpose                                                       | URL / Port                       |
 | ---------- | ----------------------- | -------------------------------------------------------------- | --------------------------------- |
 | `db`       | `postgres:16-alpine`    | Primary database (used by Prisma)                               | `5432`                            |
-| `redis`    | `redis:7-alpine`        | Cache / sessions / job queue (reminders & follow-ups)            | `6379`                             |
+| `redis`    | `redis:7-alpine`        | Rate-limit counters, shared across API instances                 | `6379`                             |
 | `minio`    | `minio/minio`           | S3-compatible object storage (CVs, cover letters, offer PDFs)    | `9000` (API), `9001` (console)    |
 | `backend`  | `backend/Dockerfile.dev`| NestJS API (`nest start --watch` under the hood)                 | http://localhost:3000/api         |
 | `frontend` | `frontend/Dockerfile.dev`| Angular app (`ng serve`)                                        | http://localhost:4200             |
@@ -109,10 +109,11 @@ pnpm start                    # http://localhost:4200 — proxies /api to localh
 | `DATABASE_URL` | PostgreSQL connection string         | see `.env.example`      |
 | `PORT`         | HTTP server port                     | `3000`                  |
 | `CORS_ORIGIN`  | Allowed origin(s), comma-separated   | `http://localhost:4200` |
-| `REDIS_URL`    | Redis connection string              | see `.env.example`      |
+| `REDIS_URL`    | Rate-limit counter store; required in production | see `.env.example`      |
 | `S3_ENDPOINT`  | MinIO/S3 endpoint for attachments    | `http://localhost:9000` |
 | `S3_BUCKET`    | Bucket for uploaded files            | `project03-uploads`     |
 | `AUDIT_LOG_RETENTION_DAYS` | How long audit entries are kept (they hold IPs) | `365` |
+| `SESSION_RETENTION_DAYS` | How long dead refresh sessions are kept (they hold IPs) | `30` |
 
 ## Authentication
 
@@ -162,7 +163,7 @@ Job-search tracker, fully **per-user isolated**. Core Prisma models (see
 | Applications  | `JobApplication` (status, salary, work mode, dates, priority…), `Company`, `Contact` |
 | Pipeline      | `Interview`, `ApplicationStatusEvent` (status history → funnel & timing stats) |
 | Attachments   | `Document` (metadata; bytes in MinIO/S3), `Tag` + `ApplicationTag` |
-| Follow-ups    | `Reminder` (due dates → Redis job queue) |
+| Follow-ups    | `Reminder` (due dates; in-app only — e-mail reminders are not wired yet) |
 | Gamification  | `GamificationProfile` (XP, level, streaks), `XpEvent` (append-only ledger), `Achievement` + `UserAchievement` |
 
 Deleting a company nulls the link on its applications (kept); deleting an application keeps the

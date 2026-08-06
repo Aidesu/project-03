@@ -31,8 +31,9 @@ function company(overrides: Partial<CompanyListItem> = {}): CompanyListItem {
   };
 }
 
-function setup() {
+function setup(latestPosition: string | null = null) {
   const create = vi.fn((_: CreateApplicationInput) => of({ id: 'new-id' }));
+  const latest = vi.fn(() => of(latestPosition));
   const navigate = vi.fn();
   const remember = vi.fn();
   // Pinned so the seeded values do not depend on the machine's locale.
@@ -47,7 +48,10 @@ function setup() {
     providers: [
       { provide: ActivatedRoute, useValue: NEW_ROUTE },
       { provide: Router, useValue: { navigate } },
-      { provide: ApplicationsService, useValue: { create } },
+      {
+        provide: ApplicationsService,
+        useValue: { create, latestPosition: latest },
+      },
       {
         provide: ApplicationDefaultsService,
         useValue: { read: () => defaults, remember },
@@ -57,7 +61,7 @@ function setup() {
   // The summaries render enum labels, so pin the language the assertions expect.
   TestBed.inject(I18nService).setLocale('en');
   const component = TestBed.createComponent(ApplicationForm).componentInstance;
-  return { component, create, navigate, remember };
+  return { component, create, navigate, remember, latest };
 }
 
 describe('ApplicationForm', () => {
@@ -68,6 +72,16 @@ describe('ApplicationForm', () => {
     expect(component.isOpen('tracking')).toBe(false);
     expect(component.isOpen('salary')).toBe(false);
     expect(component.isOpen('extras')).toBe(false);
+  });
+
+  it('pre-fills the job title from the previous application', () => {
+    const { component } = setup('Frontend Developer');
+    expect(component.form.controls.position.value).toBe('Frontend Developer');
+  });
+
+  it('starts on an empty title when there is no previous application', () => {
+    const { component } = setup();
+    expect(component.form.controls.position.value).toBe('');
   });
 
   it('summarises a collapsed section from its current values', () => {
