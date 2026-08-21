@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -26,10 +26,16 @@ const COMPANY = {
   _count: { applications: 0, contacts: 0 },
 } satisfies CompanyListItem;
 
-function setup(response = of({ id: 'app-1' })) {
+function setup(
+  response = of({ id: 'app-1' }),
+  latest: Observable<string | null> = of(null),
+) {
   const create = vi.fn((_: CreateApplicationInput) => response);
+  const latestPosition = vi.fn(() => latest);
   TestBed.configureTestingModule({
-    providers: [{ provide: ApplicationsService, useValue: { create } }],
+    providers: [
+      { provide: ApplicationsService, useValue: { create, latestPosition } },
+    ],
   });
   const component = TestBed.createComponent(QuickApplicationForm).componentInstance;
   const results: QuickApplicationResult[] = [];
@@ -94,6 +100,21 @@ describe('QuickApplicationForm', () => {
     component.form.patchValue({ position: 'Frontend Developer' });
     component.submit(true);
     expect(results[0].continueEditing).toBe(true);
+  });
+
+  it('pre-fills the job title from the previous application', () => {
+    const { component } = setup(of({ id: 'app-1' }), of('Frontend Developer'));
+    expect(component.form.controls.position.value).toBe('Frontend Developer');
+  });
+
+  it('leaves a title the user already typed alone', () => {
+    const latest = new Subject<string | null>();
+    const { component } = setup(of({ id: 'app-1' }), latest);
+    component.form.controls.position.setValue('Backend Developer');
+    component.form.controls.position.markAsDirty();
+    latest.next('Frontend Developer');
+
+    expect(component.form.controls.position.value).toBe('Backend Developer');
   });
 
   it('surfaces a failed save and stays open', () => {

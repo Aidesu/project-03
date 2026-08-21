@@ -10,6 +10,7 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { CommonModule } from './common/common.module';
 import { CorrelationIdMiddleware } from './common/correlation-id.middleware';
+import { RateLimitStorage } from './common/rate-limit.storage';
 import { throttlerConfig } from './common/throttler.config';
 import { CompaniesModule } from './companies/companies.module';
 import { CompanyRegistryModule } from './company-registry/company-registry.module';
@@ -27,8 +28,17 @@ import { UsersModule } from './users/users.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     // Per-IP ceiling for the whole API + a per-identity limit on the
-    // credential routes (see throttler.config.ts).
-    ThrottlerModule.forRoot(throttlerConfig),
+    // credential routes (see throttler.config.ts). Counters live in Redis so
+    // they survive a restart and are shared across instances; see
+    // rate-limit.storage.ts for the degraded path.
+    ThrottlerModule.forRootAsync({
+      imports: [CommonModule],
+      inject: [RateLimitStorage],
+      useFactory: (storage: RateLimitStorage) => ({
+        ...throttlerConfig,
+        storage,
+      }),
+    }),
     // Drives the audit-log retention purge (audit-retention.service.ts).
     ScheduleModule.forRoot(),
     CommonModule,

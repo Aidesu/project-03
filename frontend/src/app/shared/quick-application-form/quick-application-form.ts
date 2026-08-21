@@ -13,6 +13,7 @@ import {
   ApplicationStatus,
   CompanyListItem,
 } from '../../core/models';
+import { seedPositionFromLatest } from '../../core/position-seed';
 import { CompanyLink } from '../company-picker/company-link';
 import { CompanyPicker } from '../company-picker/company-picker';
 import { Modal } from '../modal/modal';
@@ -68,6 +69,7 @@ export class QuickApplicationForm {
     this.form.controls.companyName.valueChanges
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.companyLink.reconcile());
+    seedPositionFromLatest(this.form.controls.position);
   }
 
   onCompanyPicked(company: CompanyListItem): void {

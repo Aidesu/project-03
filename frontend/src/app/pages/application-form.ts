@@ -34,6 +34,7 @@ import {
   SalaryPeriod,
   WorkMode,
 } from '../core/models';
+import { seedPositionFromLatest } from '../core/position-seed';
 import { CompanyLink } from '../shared/company-picker/company-link';
 import { CompanyPicker } from '../shared/company-picker/company-picker';
 
@@ -203,6 +204,7 @@ export class ApplicationForm {
       this.value.set(this.form.getRawValue());
     });
     if (this.isEdit) this.loadForEdit();
+    else seedPositionFromLatest(this.form.controls.position);
   }
 
   /** Picking a company links the real row and fills in what it already knows. */
