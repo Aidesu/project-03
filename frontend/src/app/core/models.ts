@@ -68,10 +68,6 @@ export type ApplicationSource =
 
 export type SalaryPeriod = 'HOUR' | 'DAY' | 'MONTH' | 'YEAR';
 
-export interface TagRef {
-  tag: { id: string; name: string; color: string | null };
-}
-
 /** Shape returned by `GET /api/applications` (list include). */
 export interface ApplicationListItem {
   id: string;
@@ -86,8 +82,6 @@ export interface ApplicationListItem {
   deadlineAt: string | null;
   createdAt: string;
   updatedAt: string;
-  tags: TagRef[];
-  _count: { interviews: number };
 }
 
 export interface StatusEvent {
@@ -96,17 +90,6 @@ export interface StatusEvent {
   toStatus: ApplicationStatus;
   note: string | null;
   createdAt: string;
-}
-
-export interface InterviewItem {
-  id: string;
-  type: string;
-  mode: string | null;
-  scheduledAt: string | null;
-  durationMinutes: number | null;
-  location: string | null;
-  outcome: string;
-  notes: string | null;
 }
 
 export interface CompanyRef {
@@ -155,10 +138,8 @@ export interface ApplicationDetail {
   createdAt: string;
   updatedAt: string;
   primaryContact: ContactRef | null;
-  tags: TagRef[];
-  interviews: InterviewItem[];
   statusHistory: StatusEvent[];
-  _count: { documents: number; reminders: number };
+  _count: { documents: number };
 }
 
 // ---- Gamification -------------------------------------------------------
@@ -280,8 +261,30 @@ export interface Contact {
 /** Shape returned by `GET /api/contacts/:id` (detail include). */
 export interface ContactDetail extends Contact {
   company: ContactCompanyRef | null;
-  interviews: InterviewItem[];
-  _count: { interviews: number; primaryForApplications: number };
+  _count: { primaryForApplications: number };
+}
+
+// ---- Company registry (SIRENE) --------------------------------------------
+//
+// Shared, read-only reference data — not scoped to the signed-in user. Every
+// authenticated user can search it; the API never accepts a write here.
+
+/** Shape returned by `GET /api/company-registry/search`. */
+export interface CompanyRegistryEntry {
+  id: string;
+  siret: string;
+  siren: string;
+  name: string | null;
+  naf: string | null;
+  addressLine: string | null;
+  postalCode: string | null;
+  commune: string | null;
+  departmentCode: string | null;
+  regionCode: string | null;
+  status: string;
+  isDiffusible: boolean;
+  sourceUpdatedAt: string | null;
+  syncedAt: string;
 }
 
 // ---- Generic paginated envelope ----------------------------------------

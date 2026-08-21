@@ -41,10 +41,6 @@ export class QueryApplicationsDto {
   companyId?: string;
 
   @IsOptional()
-  @IsUUID()
-  tagId?: string;
-
-  @IsOptional()
   @Transform(toOptionalBool)
   @IsBoolean()
   isFavorite?: boolean;

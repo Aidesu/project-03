@@ -18,10 +18,7 @@ import { validateEnv } from './config/env.validation';
 import { ContactsModule } from './contacts/contacts.module';
 import { EmailTemplatesModule } from './email-templates/email-templates.module';
 import { GamificationModule } from './gamification/gamification.module';
-import { InterviewsModule } from './interviews/interviews.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { RemindersModule } from './reminders/reminders.module';
-import { TagsModule } from './tags/tags.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -51,9 +48,6 @@ import { UsersModule } from './users/users.module';
     CompaniesModule,
     CompanyRegistryModule,
     ContactsModule,
-    InterviewsModule,
-    RemindersModule,
-    TagsModule,
     EmailTemplatesModule,
   ],
   controllers: [AppController],

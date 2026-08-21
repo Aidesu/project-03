@@ -212,7 +212,6 @@ export const de: Record<TranslationKey, string> = {
   'applications.empty.title': 'Noch keine Bewerbung.',
   'applications.empty.body': 'Starte deine Quest mit deiner ersten Bewerbung.',
   'applications.unknownCompany': 'Unbekanntes Unternehmen',
-  'applications.interviews': '{count, plural, one {# Gespräch} other {# Gespräche}}',
 
   // ---- Application form -----------------------------------------------
   'applicationForm.back': 'Zurück',
@@ -282,8 +281,6 @@ export const de: Record<TranslationKey, string> = {
   'applicationDetail.details.deadline': 'Frist',
   'applicationDetail.details.closedAt': 'Abgeschlossen am',
   'applicationDetail.details.notes': 'Notizen',
-  'applicationDetail.interviews.title': 'Gespräche ({count})',
-  'applicationDetail.interviews.notScheduled': 'Nicht geplant',
   'applicationDetail.history.title': 'Verlauf',
   'applicationDetail.danger.title': 'Gefahrenzone',
   'applicationDetail.danger.delete': 'Bewerbung löschen',
@@ -298,8 +295,10 @@ export const de: Record<TranslationKey, string> = {
   'network.newContact': 'Neuer Kontakt',
   'network.tabs.companies': 'Unternehmen',
   'network.tabs.contacts': 'Kontakte',
+  'network.tabs.registry': 'Register',
   'network.searchCompanies': 'Unternehmen, Branche oder Stadt suchen…',
   'network.searchContacts': 'Name oder E-Mail suchen…',
+  'network.searchRegistry': 'Unternehmensnamen suchen…',
   'network.loadError': 'Dein Netzwerk kann nicht geladen werden.',
   'network.companies.empty.title': 'Noch kein Unternehmen.',
   'network.companies.empty.body':
@@ -319,7 +318,11 @@ export const de: Record<TranslationKey, string> = {
     'Verknüpfte Bewerbungen und Kontakte bleiben erhalten, verlieren aber diese Verknüpfung.',
   'network.confirmDeleteContact.title': '„{name}“ löschen?',
   'network.confirmDeleteContact.body':
-    'Gespräche und Bewerbungen, die auf diesen Kontakt verwiesen, bleiben erhalten, verlieren aber diese Verknüpfung.',
+    'Bewerbungen, die auf diesen Kontakt verwiesen, bleiben erhalten, verlieren aber diese Verknüpfung.',
+  'network.registry.empty.title': 'Kein Ergebnis.',
+  'network.registry.empty.body': 'Versuche einen anderen Unternehmensnamen.',
+  'network.registry.noAddress': 'Adresse nicht verfügbar',
+  'network.registry.siret': 'SIRET {siret}',
 
   // ---- Company detail --------------------------------------------------
   'companyDetail.back': 'Netzwerk',
@@ -345,9 +348,6 @@ export const de: Record<TranslationKey, string> = {
   'contactDetail.phone': 'Telefon',
   'contactDetail.linkedin': 'LinkedIn',
   'contactDetail.notes.title': 'Private Notizen',
-  'contactDetail.interviews.title': 'Gespräche ({count})',
-  'contactDetail.interviews.empty': 'Kein Gespräch mit diesem Kontakt.',
-  'contactDetail.dateTbd': 'Termin offen',
   'contactDetail.primaryFor':
     'Hauptkontakt bei {count, plural, one {# Bewerbung} other {# Bewerbungen}}.',
 
@@ -455,7 +455,6 @@ export const de: Record<TranslationKey, string> = {
   'progression.achievement.lockedAria':
     'Erfolg gesperrt: {name}, {progress} von {threshold}',
   'achievementCategory.applications': 'Bewerbungen',
-  'achievementCategory.interviews': 'Gespräche',
   'achievementCategory.offers': 'Angebote',
   'achievementCategory.discipline': 'Disziplin',
   'achievementCategory.level': 'Level',
@@ -466,10 +465,6 @@ export const de: Record<TranslationKey, string> = {
   'achievement.TEN_APPLICATIONS.description': 'Erreiche 10 Bewerbungen.',
   'achievement.TWENTY_FIVE_APPLICATIONS.name': 'Ausdauer',
   'achievement.TWENTY_FIVE_APPLICATIONS.description': 'Erreiche 25 Bewerbungen.',
-  'achievement.FIRST_INTERVIEW.name': 'Erstes Gespräch',
-  'achievement.FIRST_INTERVIEW.description': 'Ergattere dein erstes Gespräch.',
-  'achievement.FIVE_INTERVIEWS.name': 'Gesprächsroutine',
-  'achievement.FIVE_INTERVIEWS.description': 'Führe 5 Gespräche.',
   'achievement.FIRST_OFFER.name': 'Erstes Angebot',
   'achievement.FIRST_OFFER.description': 'Erhalte dein erstes Angebot.',
   'achievement.OFFER_ACCEPTED.name': 'Ziel erreicht',
@@ -616,20 +611,5 @@ export const de: Record<TranslationKey, string> = {
   'companySize.501-1000': '501 bis 1000',
   'companySize.1000+': 'Mehr als 1000',
 
-  'interviewType.PHONE_SCREEN': 'Telefonisches Vorgespräch',
-  'interviewType.HR': 'HR',
-  'interviewType.TECHNICAL': 'Fachlich',
-  'interviewType.TAKE_HOME': 'Aufgabe für zu Hause',
-  'interviewType.SYSTEM_DESIGN': 'System Design',
-  'interviewType.BEHAVIORAL': 'Verhaltensbasiert',
-  'interviewType.ONSITE': 'Vor Ort',
-  'interviewType.PANEL': 'Panel',
-  'interviewType.FINAL': 'Abschlussgespräch',
-  'interviewType.OTHER': 'Sonstiges',
 
-  'interviewOutcome.PENDING': 'Ausstehend',
-  'interviewOutcome.PASSED': 'Bestanden',
-  'interviewOutcome.FAILED': 'Nicht bestanden',
-  'interviewOutcome.CANCELED': 'Abgesagt',
-  'interviewOutcome.NO_SHOW': 'Nicht erschienen',
 };

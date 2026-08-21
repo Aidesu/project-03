@@ -8,7 +8,6 @@ import {
   WorkMode,
 } from '@prisma/client';
 import {
-  IsArray,
   IsBoolean,
   IsDate,
   IsEnum,
@@ -121,11 +120,6 @@ export class BaseApplicationDto {
   @IsOptional()
   @IsUUID()
   primaryContactId?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsUUID('all', { each: true })
-  tagIds?: string[];
 
   // Allowed at creation; on update use the /status endpoint instead.
   @IsOptional()

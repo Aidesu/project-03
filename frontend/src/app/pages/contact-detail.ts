@@ -3,11 +3,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { avatarColor } from '../core/avatar-color';
 import { ContactsService } from '../core/contacts.service';
 import { ConfirmService } from '../core/confirm.service';
-import {
-  INTERVIEW_OUTCOME_KEYS,
-  INTERVIEW_TYPE_KEYS,
-  labelOrRaw,
-} from '../core/enums';
 import { externalUrl, urlLabel } from '../core/external-url';
 import { I18nService } from '../core/i18n';
 import { ContactDetail } from '../core/models';
@@ -26,7 +21,6 @@ export class ContactDetailPage {
   private readonly i18n = inject(I18nService);
 
   readonly t = this.i18n.t;
-  readonly dateTime = this.i18n.dateTime;
 
   readonly detail = signal<ContactDetail | null>(null);
   readonly loading = signal(true);
@@ -67,14 +61,6 @@ export class ContactDetailPage {
     const d = this.detail();
     if (!d) return '';
     return [d.firstName, d.lastName].filter(Boolean).join(' ');
-  }
-
-  interviewTypeLabel(value: string): string {
-    return labelOrRaw(INTERVIEW_TYPE_KEYS, value, this.t);
-  }
-
-  interviewOutcomeLabel(value: string): string {
-    return labelOrRaw(INTERVIEW_OUTCOME_KEYS, value, this.t);
   }
 
   linkedinHref(url: string | null): string | null {

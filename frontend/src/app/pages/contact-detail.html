@@ -113,39 +113,6 @@
       </section>
     }
 
-    <!-- Interviews -->
-    <section class="mt-6 rounded-2xl border border-slate-100 bg-surface p-5 shadow-sm">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
-        {{ t('contactDetail.interviews.title', { count: d._count.interviews }) }}
-      </h2>
-
-      @if (d.interviews.length === 0) {
-        <p class="mt-3 text-sm text-slate-400">{{ t('contactDetail.interviews.empty') }}</p>
-      } @else {
-        <ul class="mt-3 flex flex-col divide-y divide-slate-100">
-          @for (i of d.interviews; track i.id) {
-            <li class="flex items-center justify-between gap-3 py-3">
-              <div class="min-w-0">
-                <p class="truncate text-sm font-medium text-slate-800">
-                  {{ interviewTypeLabel(i.type) }}
-                </p>
-                <p class="text-xs text-slate-400">
-                  @if (i.scheduledAt) {
-                    {{ dateTime(i.scheduledAt) }}
-                  } @else {
-                    {{ t('contactDetail.dateTbd') }}
-                  }
-                </p>
-              </div>
-              <span class="shrink-0 text-xs font-medium text-slate-500">
-                {{ interviewOutcomeLabel(i.outcome) }}
-              </span>
-            </li>
-          }
-        </ul>
-      }
-    </section>
-
     @if (d._count.primaryForApplications > 0) {
       <p class="mt-4 text-sm text-slate-400">
         {{ t('contactDetail.primaryFor', { count: d._count.primaryForApplications }) }}

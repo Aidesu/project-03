@@ -21,7 +21,6 @@ const levelForXp = (xp: number): number => Math.floor(xp / XP_PER_LEVEL) + 1;
 
 type AchievementMetric =
   | 'applications'
-  | 'interviews'
   | 'offers'
   | 'accepted'
   | 'streak'
@@ -34,8 +33,6 @@ const ACHIEVEMENT_METRIC: Record<string, AchievementMetric> = {
   FIRST_APPLICATION: 'applications',
   TEN_APPLICATIONS: 'applications',
   TWENTY_FIVE_APPLICATIONS: 'applications',
-  FIRST_INTERVIEW: 'interviews',
-  FIVE_INTERVIEWS: 'interviews',
   FIRST_OFFER: 'offers',
   OFFER_ACCEPTED: 'accepted',
   STREAK_7: 'streak',
@@ -300,9 +297,8 @@ export class GamificationService {
     userId: number,
     profile: GamificationProfile | null,
   ): Promise<Record<AchievementMetric, number>> {
-    const [applications, interviews, offers, accepted] = await Promise.all([
+    const [applications, offers, accepted] = await Promise.all([
       this.prisma.jobApplication.count({ where: { userId } }),
-      this.prisma.interview.count({ where: { application: { userId } } }),
       this.prisma.jobApplication.count({
         where: {
           userId,
@@ -318,7 +314,6 @@ export class GamificationService {
 
     return {
       applications,
-      interviews,
       offers,
       accepted,
       streak: profile?.longestStreakDays ?? 0,

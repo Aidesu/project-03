@@ -209,7 +209,6 @@ export const es: Record<TranslationKey, string> = {
   'applications.empty.title': 'Todavía no hay candidaturas.',
   'applications.empty.body': 'Empieza tu misión añadiendo tu primera candidatura.',
   'applications.unknownCompany': 'Empresa desconocida',
-  'applications.interviews': '{count, plural, one {# entrevista} other {# entrevistas}}',
 
   // ---- Application form -----------------------------------------------
   'applicationForm.back': 'Volver',
@@ -278,8 +277,6 @@ export const es: Record<TranslationKey, string> = {
   'applicationDetail.details.deadline': 'Fecha límite',
   'applicationDetail.details.closedAt': 'Cerrada el',
   'applicationDetail.details.notes': 'Notas',
-  'applicationDetail.interviews.title': 'Entrevistas ({count})',
-  'applicationDetail.interviews.notScheduled': 'Sin programar',
   'applicationDetail.history.title': 'Historial',
   'applicationDetail.danger.title': 'Zona sensible',
   'applicationDetail.danger.delete': 'Eliminar la candidatura',
@@ -294,8 +291,10 @@ export const es: Record<TranslationKey, string> = {
   'network.newContact': 'Nuevo contacto',
   'network.tabs.companies': 'Empresas',
   'network.tabs.contacts': 'Contactos',
+  'network.tabs.registry': 'Registro',
   'network.searchCompanies': 'Buscar una empresa, un sector, una ciudad…',
   'network.searchContacts': 'Buscar un nombre, un correo…',
+  'network.searchRegistry': 'Buscar un nombre de empresa…',
   'network.loadError': 'No se puede cargar tu red.',
   'network.companies.empty.title': 'Todavía no hay empresas.',
   'network.companies.empty.body':
@@ -315,7 +314,11 @@ export const es: Record<TranslationKey, string> = {
     'Las candidaturas y los contactos vinculados se conservan, pero pierden este vínculo.',
   'network.confirmDeleteContact.title': '¿Eliminar «{name}»?',
   'network.confirmDeleteContact.body':
-    'Las entrevistas y candidaturas que hacían referencia a este contacto se conservan, pero pierden este vínculo.',
+    'Las candidaturas que hacían referencia a este contacto se conservan, pero pierden este vínculo.',
+  'network.registry.empty.title': 'Sin resultados.',
+  'network.registry.empty.body': 'Prueba con otro nombre de empresa.',
+  'network.registry.noAddress': 'Dirección no disponible',
+  'network.registry.siret': 'SIRET {siret}',
 
   // ---- Company detail --------------------------------------------------
   'companyDetail.back': 'Red',
@@ -341,9 +344,6 @@ export const es: Record<TranslationKey, string> = {
   'contactDetail.phone': 'Teléfono',
   'contactDetail.linkedin': 'LinkedIn',
   'contactDetail.notes.title': 'Notas privadas',
-  'contactDetail.interviews.title': 'Entrevistas ({count})',
-  'contactDetail.interviews.empty': 'No hay entrevistas con este contacto.',
-  'contactDetail.dateTbd': 'Fecha por definir',
   'contactDetail.primaryFor':
     'Contacto principal en {count, plural, one {# candidatura} other {# candidaturas}}.',
 
@@ -447,7 +447,6 @@ export const es: Record<TranslationKey, string> = {
   'progression.achievement.lockedAria':
     'Logro bloqueado: {name}, {progress} de {threshold}',
   'achievementCategory.applications': 'Candidaturas',
-  'achievementCategory.interviews': 'Entrevistas',
   'achievementCategory.offers': 'Ofertas',
   'achievementCategory.discipline': 'Constancia',
   'achievementCategory.level': 'Nivel',
@@ -458,10 +457,6 @@ export const es: Record<TranslationKey, string> = {
   'achievement.TEN_APPLICATIONS.description': 'Llega a 10 candidaturas.',
   'achievement.TWENTY_FIVE_APPLICATIONS.name': 'Perseverancia',
   'achievement.TWENTY_FIVE_APPLICATIONS.description': 'Llega a 25 candidaturas.',
-  'achievement.FIRST_INTERVIEW.name': 'Primera entrevista',
-  'achievement.FIRST_INTERVIEW.description': 'Consigue tu primera entrevista.',
-  'achievement.FIVE_INTERVIEWS.name': 'Con oficio en entrevistas',
-  'achievement.FIVE_INTERVIEWS.description': 'Haz 5 entrevistas.',
   'achievement.FIRST_OFFER.name': 'Primera oferta',
   'achievement.FIRST_OFFER.description': 'Recibe tu primera oferta.',
   'achievement.OFFER_ACCEPTED.name': 'Objetivo cumplido',
@@ -607,20 +602,5 @@ export const es: Record<TranslationKey, string> = {
   'companySize.501-1000': 'De 501 a 1000',
   'companySize.1000+': 'Más de 1000',
 
-  'interviewType.PHONE_SCREEN': 'Preselección telefónica',
-  'interviewType.HR': 'RR. HH.',
-  'interviewType.TECHNICAL': 'Técnica',
-  'interviewType.TAKE_HOME': 'Prueba para casa',
-  'interviewType.SYSTEM_DESIGN': 'Diseño de sistemas',
-  'interviewType.BEHAVIORAL': 'Competencial',
-  'interviewType.ONSITE': 'Presencial',
-  'interviewType.PANEL': 'Panel',
-  'interviewType.FINAL': 'Final',
-  'interviewType.OTHER': 'Otro',
 
-  'interviewOutcome.PENDING': 'Pendiente',
-  'interviewOutcome.PASSED': 'Superada',
-  'interviewOutcome.FAILED': 'No superada',
-  'interviewOutcome.CANCELED': 'Cancelada',
-  'interviewOutcome.NO_SHOW': 'No presentado',
 };

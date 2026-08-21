@@ -4,14 +4,20 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { avatarColor } from '../core/avatar-color';
 import { CompaniesService } from '../core/companies.service';
+import { CompanyRegistryService } from '../core/company-registry.service';
 import { ConfirmService } from '../core/confirm.service';
 import { ContactsService } from '../core/contacts.service';
 import { I18nService } from '../core/i18n';
-import { CompanyListItem, Contact, Paginated } from '../core/models';
+import {
+  CompanyListItem,
+  CompanyRegistryEntry,
+  Contact,
+  Paginated,
+} from '../core/models';
 import { CompanyForm } from '../shared/company-form/company-form';
 import { ContactForm } from '../shared/contact-form/contact-form';
 
-export type NetworkTab = 'companies' | 'contacts';
+export type NetworkTab = 'companies' | 'contacts' | 'registry';
 
 @Component({
   selector: 'app-network',
@@ -23,6 +29,7 @@ export class Network {
   private readonly router = inject(Router);
   private readonly companiesApi = inject(CompaniesService);
   private readonly contactsApi = inject(ContactsService);
+  private readonly registryApi = inject(CompanyRegistryService);
   private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
 
@@ -31,6 +38,7 @@ export class Network {
 
   readonly companies = signal<Paginated<CompanyListItem> | null>(null);
   readonly contacts = signal<Paginated<Contact> | null>(null);
+  readonly registry = signal<Paginated<CompanyRegistryEntry> | null>(null);
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly deletingId = signal<string | null>(null);
@@ -40,12 +48,19 @@ export class Network {
   companyPage = 1;
   contactSearch = '';
   contactPage = 1;
+  registrySearch = '';
+  registryPage = 1;
 
   readonly showCompanyForm = signal(false);
   readonly showContactForm = signal(false);
 
   readonly rangeLabel = computed(() => {
-    const d = this.tab() === 'companies' ? this.companies() : this.contacts();
+    const d =
+      this.tab() === 'companies'
+        ? this.companies()
+        : this.tab() === 'contacts'
+          ? this.contacts()
+          : this.registry();
     if (!d || d.total === 0) return '';
     const from = (d.page - 1) * d.pageSize + 1;
     const to = Math.min(d.page * d.pageSize, d.total);
@@ -58,7 +73,9 @@ export class Network {
 
   constructor() {
     const requested = this.route.snapshot.queryParamMap.get('tab');
-    if (requested === 'contacts') this.tab.set('contacts');
+    if (requested === 'contacts' || requested === 'registry') {
+      this.tab.set(requested);
+    }
     this.load();
   }
 
@@ -78,23 +95,33 @@ export class Network {
     this.loading.set(true);
     this.error.set(false);
 
-    const request: Observable<Paginated<CompanyListItem> | Paginated<Contact>> =
-      this.tab() === 'companies'
+    const tab = this.tab();
+    const request: Observable<
+      Paginated<CompanyListItem> | Paginated<Contact> | Paginated<CompanyRegistryEntry>
+    > =
+      tab === 'companies'
         ? this.companiesApi.list({
             page: this.companyPage,
             search: this.companySearch.trim() || undefined,
           })
-        : this.contactsApi.list({
-            page: this.contactPage,
-            search: this.contactSearch.trim() || undefined,
-          });
+        : tab === 'contacts'
+          ? this.contactsApi.list({
+              page: this.contactPage,
+              search: this.contactSearch.trim() || undefined,
+            })
+          : this.registryApi.search({
+              page: this.registryPage,
+              q: this.registrySearch.trim() || undefined,
+            });
 
     request.subscribe({
       next: (page) => {
-        if (this.tab() === 'companies') {
+        if (tab === 'companies') {
           this.companies.set(page as Paginated<CompanyListItem>);
-        } else {
+        } else if (tab === 'contacts') {
           this.contacts.set(page as Paginated<Contact>);
+        } else {
+          this.registry.set(page as Paginated<CompanyRegistryEntry>);
         }
         this.loading.set(false);
       },
@@ -108,13 +135,15 @@ export class Network {
   /** Reset to the first page whenever the search changes. */
   applySearch(): void {
     if (this.tab() === 'companies') this.companyPage = 1;
-    else this.contactPage = 1;
+    else if (this.tab() === 'contacts') this.contactPage = 1;
+    else this.registryPage = 1;
     this.load();
   }
 
   goTo(page: number): void {
     if (this.tab() === 'companies') this.companyPage = page;
-    else this.contactPage = page;
+    else if (this.tab() === 'contacts') this.contactPage = page;
+    else this.registryPage = page;
     this.load();
   }
 
@@ -128,6 +157,10 @@ export class Network {
 
   contactName(c: Contact): string {
     return [c.firstName, c.lastName].filter(Boolean).join(' ');
+  }
+
+  registryLocation(e: CompanyRegistryEntry): string {
+    return [e.postalCode, e.commune].filter(Boolean).join(' ');
   }
 
   onSaved(): void {

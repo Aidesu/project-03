@@ -30,16 +30,12 @@ import { UpdateApplicationDto } from './dto/update-application.dto';
 const APPLICATION_DETAIL_INCLUDE = {
   company: true,
   primaryContact: true,
-  tags: { include: { tag: true } },
-  interviews: { orderBy: { scheduledAt: 'asc' } },
   statusHistory: { orderBy: { createdAt: 'asc' } },
-  _count: { select: { documents: true, reminders: true } },
+  _count: { select: { documents: true } },
 } satisfies Prisma.JobApplicationInclude;
 
 const APPLICATION_LIST_INCLUDE = {
   company: { select: { id: true, name: true, logoUrl: true } },
-  tags: { include: { tag: true } },
-  _count: { select: { interviews: true } },
 } satisfies Prisma.JobApplicationInclude;
 
 // XP awards
@@ -88,12 +84,7 @@ export class ApplicationsService {
   ) {}
 
   async create(userId: number, dto: CreateApplicationDto) {
-    await this.assertRefs(
-      userId,
-      dto.companyId,
-      dto.primaryContactId,
-      dto.tagIds,
-    );
+    await this.assertRefs(userId, dto.companyId, dto.primaryContactId);
 
     const status = dto.status ?? ApplicationStatus.WISHLIST;
     const now = new Date();
@@ -126,9 +117,6 @@ export class ApplicationsService {
         notes: dto.notes ?? null,
         isFavorite: dto.isFavorite,
         primaryContactId: dto.primaryContactId ?? null,
-        tags: dto.tagIds?.length
-          ? { create: dto.tagIds.map((tagId) => ({ tagId })) }
-          : undefined,
         statusHistory: { create: { toStatus: status } },
       },
       include: APPLICATION_DETAIL_INCLUDE,
@@ -165,7 +153,6 @@ export class ApplicationsService {
     if (q.companyId) where.companyId = q.companyId;
     if (q.isFavorite !== undefined) where.isFavorite = q.isFavorite;
     if (!q.includeArchived) where.archivedAt = null;
-    if (q.tagId) where.tags = { some: { tagId: q.tagId } };
     if (q.search) {
       where.OR = [
         { position: { contains: q.search, mode: 'insensitive' } },
@@ -209,12 +196,7 @@ export class ApplicationsService {
 
   async update(userId: number, id: string, dto: UpdateApplicationDto) {
     await this.findOwnedOrThrow(userId, id);
-    await this.assertRefs(
-      userId,
-      dto.companyId,
-      dto.primaryContactId,
-      dto.tagIds,
-    );
+    await this.assertRefs(userId, dto.companyId, dto.primaryContactId);
 
     // The form still posts free-text `companyName`; resolve it to a real
     // Company row so the application shows up under that company in the
@@ -251,18 +233,10 @@ export class ApplicationsService {
       data.archivedAt = dto.isArchived ? new Date() : null;
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      if (dto.tagIds !== undefined) {
-        await tx.applicationTag.deleteMany({ where: { applicationId: id } });
-        if (dto.tagIds.length) {
-          data.tags = { create: dto.tagIds.map((tagId) => ({ tagId })) };
-        }
-      }
-      return tx.jobApplication.update({
-        where: { id },
-        data,
-        include: APPLICATION_DETAIL_INCLUDE,
-      });
+    return this.prisma.jobApplication.update({
+      where: { id },
+      data,
+      include: APPLICATION_DETAIL_INCLUDE,
     });
   }
 
@@ -405,12 +379,11 @@ export class ApplicationsService {
     return application;
   }
 
-  /** Ensure referenced company/contact/tags all belong to the same user. */
+  /** Ensure referenced company/contact all belong to the same user. */
   private async assertRefs(
     userId: number,
     companyId?: string,
     primaryContactId?: string,
-    tagIds?: string[],
   ): Promise<void> {
     if (companyId) {
       const found = await this.prisma.company.count({
@@ -423,15 +396,6 @@ export class ApplicationsService {
         where: { id: primaryContactId, userId },
       });
       if (!found) throw new BadRequestException('Unknown contact');
-    }
-    if (tagIds && tagIds.length) {
-      const unique = [...new Set(tagIds)];
-      const found = await this.prisma.tag.count({
-        where: { id: { in: unique }, userId },
-      });
-      if (found !== unique.length) {
-        throw new BadRequestException('One or more tags are unknown');
-      }
     }
   }
 }

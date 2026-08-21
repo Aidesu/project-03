@@ -43,7 +43,6 @@ interface PrismaMock {
   achievement: { findMany: jest.Mock };
   userAchievement: { findMany: jest.Mock; createMany: jest.Mock };
   jobApplication: { count: jest.Mock };
-  interview: { count: jest.Mock };
   $transaction: jest.Mock;
 }
 
@@ -71,7 +70,6 @@ describe('GamificationService', () => {
         createMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       jobApplication: { count: jest.fn().mockResolvedValue(0) },
-      interview: { count: jest.fn().mockResolvedValue(0) },
       // Interactive transactions run the callback against the same mock.
       $transaction: jest.fn((arg: unknown) =>
         typeof arg === 'function'

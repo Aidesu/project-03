@@ -207,7 +207,6 @@ export const fr: Record<TranslationKey, string> = {
   'applications.empty.title': 'Aucune candidature pour l’instant.',
   'applications.empty.body': 'Lance ta quête en ajoutant ta première candidature.',
   'applications.unknownCompany': 'Entreprise inconnue',
-  'applications.interviews': '{count, plural, one {# entretien} other {# entretiens}}',
 
   // ---- Application form -----------------------------------------------
   'applicationForm.back': 'Retour',
@@ -275,8 +274,6 @@ export const fr: Record<TranslationKey, string> = {
   'applicationDetail.details.deadline': 'Échéance',
   'applicationDetail.details.closedAt': 'Clôturé le',
   'applicationDetail.details.notes': 'Notes',
-  'applicationDetail.interviews.title': 'Entretiens ({count})',
-  'applicationDetail.interviews.notScheduled': 'Non planifié',
   'applicationDetail.history.title': 'Historique',
   'applicationDetail.danger.title': 'Zone sensible',
   'applicationDetail.danger.delete': 'Supprimer la candidature',
@@ -291,8 +288,10 @@ export const fr: Record<TranslationKey, string> = {
   'network.newContact': 'Nouveau contact',
   'network.tabs.companies': 'Entreprises',
   'network.tabs.contacts': 'Contacts',
+  'network.tabs.registry': 'Registre',
   'network.searchCompanies': 'Rechercher une entreprise, un secteur, une ville…',
   'network.searchContacts': 'Rechercher un nom, un e-mail…',
+  'network.searchRegistry': 'Rechercher un nom d’entreprise…',
   'network.loadError': 'Impossible de charger ton réseau.',
   'network.companies.empty.title': 'Aucune entreprise pour l’instant.',
   'network.companies.empty.body':
@@ -312,7 +311,11 @@ export const fr: Record<TranslationKey, string> = {
     'Les candidatures et contacts liés sont conservés, mais ils perdent ce lien.',
   'network.confirmDeleteContact.title': 'Supprimer « {name} » ?',
   'network.confirmDeleteContact.body':
-    'Les entretiens et candidatures qui référençaient ce contact sont conservés, mais ils perdent ce lien.',
+    'Les candidatures qui référençaient ce contact sont conservées, mais elles perdent ce lien.',
+  'network.registry.empty.title': 'Aucun résultat.',
+  'network.registry.empty.body': 'Essaie un autre nom d’entreprise.',
+  'network.registry.noAddress': 'Adresse non disponible',
+  'network.registry.siret': 'SIRET {siret}',
 
   // ---- Company detail --------------------------------------------------
   'companyDetail.back': 'Réseau',
@@ -338,9 +341,6 @@ export const fr: Record<TranslationKey, string> = {
   'contactDetail.phone': 'Téléphone',
   'contactDetail.linkedin': 'LinkedIn',
   'contactDetail.notes.title': 'Notes privées',
-  'contactDetail.interviews.title': 'Entretiens ({count})',
-  'contactDetail.interviews.empty': 'Aucun entretien avec ce contact.',
-  'contactDetail.dateTbd': 'Date à définir',
   'contactDetail.primaryFor':
     'Contact principal sur {count, plural, one {# candidature} other {# candidatures}}.',
 
@@ -443,7 +443,6 @@ export const fr: Record<TranslationKey, string> = {
   'progression.achievement.lockedAria':
     'Succès verrouillé : {name}, {progress} sur {threshold}',
   'achievementCategory.applications': 'Candidatures',
-  'achievementCategory.interviews': 'Entretiens',
   'achievementCategory.offers': 'Offres',
   'achievementCategory.discipline': 'Discipline',
   'achievementCategory.level': 'Niveau',
@@ -454,10 +453,6 @@ export const fr: Record<TranslationKey, string> = {
   'achievement.TEN_APPLICATIONS.description': 'Atteins 10 candidatures.',
   'achievement.TWENTY_FIVE_APPLICATIONS.name': 'Persévérance',
   'achievement.TWENTY_FIVE_APPLICATIONS.description': 'Atteins 25 candidatures.',
-  'achievement.FIRST_INTERVIEW.name': 'Premier oral',
-  'achievement.FIRST_INTERVIEW.description': 'Décroche ton premier entretien.',
-  'achievement.FIVE_INTERVIEWS.name': 'Habitué·e des entretiens',
-  'achievement.FIVE_INTERVIEWS.description': 'Passe 5 entretiens.',
   'achievement.FIRST_OFFER.name': 'Première offre',
   'achievement.FIRST_OFFER.description': 'Reçois ta première offre.',
   'achievement.OFFER_ACCEPTED.name': 'Objectif atteint',
@@ -600,20 +595,5 @@ export const fr: Record<TranslationKey, string> = {
   'companySize.501-1000': '501 à 1000',
   'companySize.1000+': 'Plus de 1000',
 
-  'interviewType.PHONE_SCREEN': 'Préqualif téléphonique',
-  'interviewType.HR': 'RH',
-  'interviewType.TECHNICAL': 'Technique',
-  'interviewType.TAKE_HOME': 'Test à la maison',
-  'interviewType.SYSTEM_DESIGN': 'System design',
-  'interviewType.BEHAVIORAL': 'Comportemental',
-  'interviewType.ONSITE': 'Sur site',
-  'interviewType.PANEL': 'Panel',
-  'interviewType.FINAL': 'Final',
-  'interviewType.OTHER': 'Autre',
 
-  'interviewOutcome.PENDING': 'À venir',
-  'interviewOutcome.PASSED': 'Réussi',
-  'interviewOutcome.FAILED': 'Échoué',
-  'interviewOutcome.CANCELED': 'Annulé',
-  'interviewOutcome.NO_SHOW': 'Absence',
 };

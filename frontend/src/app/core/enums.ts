@@ -73,29 +73,6 @@ export const COMPANY_SIZE_KEYS = {
   '1000+': 'companySize.1000+',
 } satisfies Record<string, TranslationKey>;
 
-// Interview enums — read-only display for now (no interview UI yet). Typed
-// against `string` because the API may add a value before the client knows it.
-export const INTERVIEW_TYPE_KEYS = {
-  PHONE_SCREEN: 'interviewType.PHONE_SCREEN',
-  HR: 'interviewType.HR',
-  TECHNICAL: 'interviewType.TECHNICAL',
-  TAKE_HOME: 'interviewType.TAKE_HOME',
-  SYSTEM_DESIGN: 'interviewType.SYSTEM_DESIGN',
-  BEHAVIORAL: 'interviewType.BEHAVIORAL',
-  ONSITE: 'interviewType.ONSITE',
-  PANEL: 'interviewType.PANEL',
-  FINAL: 'interviewType.FINAL',
-  OTHER: 'interviewType.OTHER',
-} satisfies Record<string, TranslationKey>;
-
-export const INTERVIEW_OUTCOME_KEYS = {
-  PENDING: 'interviewOutcome.PENDING',
-  PASSED: 'interviewOutcome.PASSED',
-  FAILED: 'interviewOutcome.FAILED',
-  CANCELED: 'interviewOutcome.CANCELED',
-  NO_SHOW: 'interviewOutcome.NO_SHOW',
-} satisfies Record<string, TranslationKey>;
-
 /** Builds a `<select>` option list in the active language, preserving order. */
 export function optionsFrom<T extends string>(
   keys: Record<T, TranslationKey>,
@@ -122,8 +99,8 @@ export function labelOf<T extends string>(
 }
 
 /**
- * Same, but for values the server may extend beyond what this client knows
- * (interview types/outcomes): falls back to the raw value rather than blanking.
+ * Same, but for values the server may extend beyond what this client knows:
+ * falls back to the raw value rather than blanking.
  */
 export function labelOrRaw(
   keys: Record<string, TranslationKey>,
@@ -141,14 +118,12 @@ export function labelOrRaw(
 
 export type AchievementCategory =
   | 'applications'
-  | 'interviews'
   | 'offers'
   | 'discipline'
   | 'level';
 
 export const ACHIEVEMENT_CATEGORY_ORDER: AchievementCategory[] = [
   'applications',
-  'interviews',
   'offers',
   'discipline',
   'level',
@@ -156,7 +131,6 @@ export const ACHIEVEMENT_CATEGORY_ORDER: AchievementCategory[] = [
 
 export const ACHIEVEMENT_CATEGORY_KEYS = {
   applications: 'achievementCategory.applications',
-  interviews: 'achievementCategory.interviews',
   offers: 'achievementCategory.offers',
   discipline: 'achievementCategory.discipline',
   level: 'achievementCategory.level',
@@ -164,7 +138,6 @@ export const ACHIEVEMENT_CATEGORY_KEYS = {
 
 export function achievementCategory(code: string): AchievementCategory {
   if (code.includes('APPLICATION')) return 'applications';
-  if (code.includes('INTERVIEW')) return 'interviews';
   if (code.includes('OFFER') || code.includes('ACCEPTED')) return 'offers';
   if (code.includes('STREAK')) return 'discipline';
   return 'level';
@@ -175,8 +148,6 @@ const TRANSLATED_ACHIEVEMENTS = new Set([
   'FIRST_APPLICATION',
   'TEN_APPLICATIONS',
   'TWENTY_FIVE_APPLICATIONS',
-  'FIRST_INTERVIEW',
-  'FIVE_INTERVIEWS',
   'FIRST_OFFER',
   'OFFER_ACCEPTED',
   'STREAK_7',

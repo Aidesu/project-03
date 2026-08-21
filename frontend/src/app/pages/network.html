@@ -13,7 +13,7 @@
     >
       {{ t('network.newCompany') }}
     </button>
-  } @else {
+  } @else if (tab() === 'contacts') {
     <button
       (click)="showContactForm.set(true)"
       class="btn btn--primary btn--add"
@@ -51,6 +51,16 @@
       <span class="ml-1.5 text-xs text-slate-400">{{ d.total }}</span>
     }
   </button>
+  <button
+    (click)="switchTab('registry')"
+    [class]="
+      tab() === 'registry'
+        ? 'border-b-2 border-brand-600 px-4 py-2.5 text-sm font-semibold text-brand-700'
+        : 'border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700'
+    "
+  >
+    {{ t('network.tabs.registry') }}
+  </button>
 </div>
 
 <!-- Search -->
@@ -63,12 +73,20 @@
       [placeholder]="t('network.searchCompanies')"
       class="w-full max-w-xs rounded-lg border border-slate-300 bg-surface px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
     />
-  } @else {
+  } @else if (tab() === 'contacts') {
     <input
       type="search"
       [(ngModel)]="contactSearch"
       (keyup.enter)="applySearch()"
       [placeholder]="t('network.searchContacts')"
+      class="w-full max-w-xs rounded-lg border border-slate-300 bg-surface px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+    />
+  } @else {
+    <input
+      type="search"
+      [(ngModel)]="registrySearch"
+      (keyup.enter)="applySearch()"
+      [placeholder]="t('network.searchRegistry')"
       class="w-full max-w-xs rounded-lg border border-slate-300 bg-surface px-3.5 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
     />
   }
@@ -90,6 +108,72 @@
   <div class="mt-6 alert alert--error alert--block">
     {{ t('network.loadError') }}
   </div>
+} @else if (tab() === 'registry') {
+  <!-- Registry (SIRENE) -->
+  @if (registry(); as d) {
+    @if (d.items.length === 0) {
+      <div
+        class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-surface px-5 py-16 text-center"
+      >
+        <p class="text-sm font-medium text-slate-600">
+          {{ t('network.registry.empty.title') }}
+        </p>
+        <p class="mt-1 text-sm text-slate-400">{{ t('network.registry.empty.body') }}</p>
+      </div>
+    } @else {
+      <ul class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        @for (e of d.items; track e.id) {
+          <li
+            class="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-surface p-4 shadow-sm"
+          >
+            <div class="flex items-start gap-3">
+              <span
+                class="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-bold"
+                [class]="avatarColor(e.name || e.siret)"
+              >
+                {{ initial(e.name || e.siret) }}
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate font-semibold text-slate-800">
+                  {{ e.name || e.siret }}
+                </p>
+                <p class="truncate text-sm text-slate-500">
+                  {{ registryLocation(e) || t('network.registry.noAddress') }}
+                </p>
+              </div>
+            </div>
+            <p class="border-t border-slate-100 pt-3 text-xs text-slate-400">
+              {{ t('network.registry.siret', { siret: e.siret }) }}
+            </p>
+          </li>
+        }
+      </ul>
+
+      @if (d.pageCount > 1) {
+        <div class="mt-6 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            (click)="goTo(d.page - 1)"
+            [disabled]="d.page <= 1"
+            class="btn btn--secondary btn--sm btn--prev"
+          >
+            {{ t('common.previous') }}
+          </button>
+          <span class="text-sm text-slate-500">{{
+            t('common.pageOf', { page: d.page, pageCount: d.pageCount })
+          }}</span>
+          <button
+            type="button"
+            (click)="goTo(d.page + 1)"
+            [disabled]="d.page >= d.pageCount"
+            class="btn btn--secondary btn--sm btn--next"
+          >
+            {{ t('common.next') }}
+          </button>
+        </div>
+      }
+    }
+  }
 } @else if (tab() === 'companies') {
   <!-- Companies -->
   @if (companies(); as d) {

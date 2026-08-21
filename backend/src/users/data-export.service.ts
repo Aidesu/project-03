@@ -13,7 +13,7 @@ const AVATAR_PRESIGN_TTL_SECONDS = 900;
 
 /** Bumped whenever the shape changes, so an older file stays interpretable. */
 const EXPORT_FORMAT = 'project-03/user-export';
-const EXPORT_VERSION = 1;
+const EXPORT_VERSION = 2;
 
 /**
  * GDPR access and portability (Art. 15 / Art. 20): everything the product holds
@@ -65,11 +65,7 @@ export class DataExportService {
       contacts,
       applications,
       statusHistory,
-      interviews,
       documents,
-      reminders,
-      tags,
-      applicationTags,
       emailTemplates,
       gamification,
       xpEvents,
@@ -102,28 +98,10 @@ export class DataExportService {
         where: { application: { userId } },
         orderBy: { createdAt: 'asc' },
       }),
-      this.prisma.interview.findMany({
-        where: { application: { userId } },
-        orderBy: { createdAt: 'asc' },
-      }),
       this.prisma.document.findMany({
         where: { userId },
         omit: { userId: true },
         orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.reminder.findMany({
-        where: { userId },
-        omit: { userId: true },
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.tag.findMany({
-        where: { userId },
-        omit: { userId: true },
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.applicationTag.findMany({
-        where: { application: { userId } },
-        orderBy: { assignedAt: 'asc' },
       }),
       this.prisma.emailTemplate.findMany({
         where: { userId },
@@ -212,11 +190,7 @@ export class DataExportService {
       contacts,
       applications,
       applicationStatusHistory: statusHistory,
-      interviews,
       documents,
-      reminders,
-      tags,
-      applicationTags,
       emailTemplates,
       gamification: { profile: gamification, xpEvents, achievements },
       // Observed rather than provided data: strictly an Art. 15 access matter,

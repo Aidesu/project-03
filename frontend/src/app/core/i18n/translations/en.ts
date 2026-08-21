@@ -206,8 +206,6 @@ export const en = {
   'applications.empty.title': 'No application yet.',
   'applications.empty.body': 'Start your quest by adding your first application.',
   'applications.unknownCompany': 'Unknown company',
-  'applications.interviews':
-    '{count, plural, one {# interview} other {# interviews}}',
 
   // ---- Application form -----------------------------------------------
   'applicationForm.back': 'Back',
@@ -274,8 +272,6 @@ export const en = {
   'applicationDetail.details.deadline': 'Deadline',
   'applicationDetail.details.closedAt': 'Closed on',
   'applicationDetail.details.notes': 'Notes',
-  'applicationDetail.interviews.title': 'Interviews ({count})',
-  'applicationDetail.interviews.notScheduled': 'Not scheduled',
   'applicationDetail.history.title': 'History',
   'applicationDetail.danger.title': 'Danger zone',
   'applicationDetail.danger.delete': 'Delete application',
@@ -290,8 +286,10 @@ export const en = {
   'network.newContact': 'New contact',
   'network.tabs.companies': 'Companies',
   'network.tabs.contacts': 'Contacts',
+  'network.tabs.registry': 'Registry',
   'network.searchCompanies': 'Search a company, an industry, a city…',
   'network.searchContacts': 'Search a name, an email…',
+  'network.searchRegistry': 'Search a company name…',
   'network.loadError': 'Your network cannot be loaded.',
   'network.companies.empty.title': 'No company yet.',
   'network.companies.empty.body':
@@ -311,7 +309,11 @@ export const en = {
     'Linked applications and contacts are kept, but they lose this link.',
   'network.confirmDeleteContact.title': 'Delete “{name}”?',
   'network.confirmDeleteContact.body':
-    'Interviews and applications that referenced this contact are kept, but they lose this link.',
+    'Applications that referenced this contact are kept, but they lose this link.',
+  'network.registry.empty.title': 'No result.',
+  'network.registry.empty.body': 'Try another company name.',
+  'network.registry.noAddress': 'Address not available',
+  'network.registry.siret': 'SIRET {siret}',
 
   // ---- Company detail --------------------------------------------------
   'companyDetail.back': 'Network',
@@ -337,9 +339,6 @@ export const en = {
   'contactDetail.phone': 'Phone',
   'contactDetail.linkedin': 'LinkedIn',
   'contactDetail.notes.title': 'Private notes',
-  'contactDetail.interviews.title': 'Interviews ({count})',
-  'contactDetail.interviews.empty': 'No interview with this contact.',
-  'contactDetail.dateTbd': 'Date to be defined',
   'contactDetail.primaryFor':
     'Primary contact on {count, plural, one {# application} other {# applications}}.',
 
@@ -442,7 +441,6 @@ export const en = {
   'progression.achievement.lockedAria':
     'Achievement locked: {name}, {progress} out of {threshold}',
   'achievementCategory.applications': 'Applications',
-  'achievementCategory.interviews': 'Interviews',
   'achievementCategory.offers': 'Offers',
   'achievementCategory.discipline': 'Discipline',
   'achievementCategory.level': 'Level',
@@ -456,10 +454,6 @@ export const en = {
   'achievement.TEN_APPLICATIONS.description': 'Reach 10 applications.',
   'achievement.TWENTY_FIVE_APPLICATIONS.name': 'Perseverance',
   'achievement.TWENTY_FIVE_APPLICATIONS.description': 'Reach 25 applications.',
-  'achievement.FIRST_INTERVIEW.name': 'First interview',
-  'achievement.FIRST_INTERVIEW.description': 'Land your first interview.',
-  'achievement.FIVE_INTERVIEWS.name': 'Interview regular',
-  'achievement.FIVE_INTERVIEWS.description': 'Sit 5 interviews.',
   'achievement.FIRST_OFFER.name': 'First offer',
   'achievement.FIRST_OFFER.description': 'Receive your first offer.',
   'achievement.OFFER_ACCEPTED.name': 'Goal reached',
@@ -601,22 +595,7 @@ export const en = {
   'companySize.501-1000': '501 to 1000',
   'companySize.1000+': 'More than 1000',
 
-  'interviewType.PHONE_SCREEN': 'Phone screen',
-  'interviewType.HR': 'HR',
-  'interviewType.TECHNICAL': 'Technical',
-  'interviewType.TAKE_HOME': 'Take-home test',
-  'interviewType.SYSTEM_DESIGN': 'System design',
-  'interviewType.BEHAVIORAL': 'Behavioural',
-  'interviewType.ONSITE': 'On site',
-  'interviewType.PANEL': 'Panel',
-  'interviewType.FINAL': 'Final',
-  'interviewType.OTHER': 'Other',
 
-  'interviewOutcome.PENDING': 'Upcoming',
-  'interviewOutcome.PASSED': 'Passed',
-  'interviewOutcome.FAILED': 'Failed',
-  'interviewOutcome.CANCELED': 'Cancelled',
-  'interviewOutcome.NO_SHOW': 'No show',
 } as const;
 
 export type TranslationKey = keyof typeof en;

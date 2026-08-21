@@ -12,8 +12,7 @@ import { UpdateContactDto } from './dto/update-contact.dto';
 
 const CONTACT_DETAIL_INCLUDE = {
   company: { select: { id: true, name: true, logoUrl: true } },
-  interviews: { orderBy: { scheduledAt: 'desc' } },
-  _count: { select: { interviews: true, primaryForApplications: true } },
+  _count: { select: { primaryForApplications: true } },
 } satisfies Prisma.ContactInclude;
 
 @Injectable()
@@ -94,7 +93,7 @@ export class ContactsService {
 
   async remove(userId: number, id: string): Promise<void> {
     await this.findOwnedOrThrow(userId, id);
-    // Interviews/applications referencing this contact have their contactId nulled.
+    // Applications referencing this contact have their contactId nulled.
     await this.prisma.contact.delete({ where: { id } });
   }
 

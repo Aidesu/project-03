@@ -99,33 +99,6 @@ enum SalaryPeriod {
   YEAR
 }
 
-enum InterviewType {
-  PHONE_SCREEN
-  HR
-  TECHNICAL
-  TAKE_HOME
-  SYSTEM_DESIGN
-  BEHAVIORAL
-  ONSITE
-  PANEL
-  FINAL
-  OTHER
-}
-
-enum InterviewMode {
-  REMOTE
-  ONSITE
-  PHONE
-}
-
-enum InterviewOutcome {
-  PENDING
-  PASSED
-  FAILED
-  CANCELED
-  NO_SHOW
-}
-
 enum DocumentType {
   CV
   COVER_LETTER
@@ -133,14 +106,6 @@ enum DocumentType {
   OFFER_LETTER
   CERTIFICATE
   OTHER
-}
-
-enum ReminderType {
-  FOLLOW_UP
-  PREPARE_INTERVIEW
-  DEADLINE
-  THANK_YOU
-  CUSTOM
 }
 
 enum EmailTemplateCategory {
@@ -209,8 +174,6 @@ model User {
   contacts       Contact[]
   applications   JobApplication[]
   documents      Document[]
-  tags           Tag[]
-  reminders      Reminder[]
   emailTemplates EmailTemplate[]
   xpEvents       XpEvent[]
   achievements   UserAchievement[]
@@ -347,7 +310,6 @@ model Contact {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  interviews             Interview[]
   primaryForApplications JobApplication[] @relation("ApplicationPrimaryContact")
 
   @@index([userId])
@@ -432,11 +394,8 @@ model JobApplication {
   primaryContactId String?
   primaryContact   Contact? @relation("ApplicationPrimaryContact", fields: [primaryContactId], references: [id], onDelete: SetNull)
 
-  interviews    Interview[]
   statusHistory ApplicationStatusEvent[]
   documents     Document[]
-  reminders     Reminder[]
-  tags          ApplicationTag[]
   xpEvents      XpEvent[]
 
   @@index([userId])
@@ -458,27 +417,6 @@ model ApplicationStatusEvent {
   @@index([applicationId])
 }
 
-model Interview {
-  id               String           @id @default(uuid())
-  applicationId    String
-  application      JobApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  contactId        String?
-  contact          Contact?         @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  type             InterviewType
-  mode             InterviewMode?
-  scheduledAt      DateTime?
-  durationMinutes  Int?
-  location         String? // address or meeting link
-  interviewerNames String? // free-text when contacts aren't recorded
-  notes            String?
-  outcome          InterviewOutcome @default(PENDING)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-
-  @@index([applicationId])
-  @@index([contactId])
-}
-
 // File metadata; the bytes live in MinIO/S3 under `storageKey`.
 model Document {
   id            String          @id @default(uuid())
@@ -495,49 +433,6 @@ model Document {
   createdAt     DateTime        @default(now())
 
   @@index([userId])
-  @@index([applicationId])
-}
-
-model Tag {
-  id        String   @id @default(uuid())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  color     String? // hex color for the UI
-  createdAt DateTime @default(now())
-
-  applications ApplicationTag[]
-
-  @@unique([userId, name])
-  @@index([userId])
-}
-
-model ApplicationTag {
-  applicationId String
-  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  tagId         String
-  tag           Tag            @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  assignedAt    DateTime       @default(now())
-
-  @@id([applicationId, tagId])
-  @@index([tagId])
-}
-
-model Reminder {
-  id            String          @id @default(uuid())
-  userId        Int
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  applicationId String?
-  application   JobApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  type          ReminderType    @default(CUSTOM)
-  title         String
-  notes         String?
-  dueAt         DateTime
-  completedAt   DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  @@index([userId, dueAt])
   @@index([applicationId])
 }
 

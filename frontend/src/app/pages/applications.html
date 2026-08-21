@@ -101,12 +101,6 @@
             </p>
           </div>
 
-          @if (app._count.interviews > 0) {
-            <span class="hidden text-xs font-medium text-slate-400 sm:inline">
-              {{ t('applications.interviews', { count: app._count.interviews }) }}
-            </span>
-          }
-
           <span
             class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
             [class]="statusBadge[app.status]"

@@ -30,22 +30,6 @@ const achievements = [
     threshold: 25,
   },
   {
-    code: 'FIRST_INTERVIEW',
-    name: 'Premier oral',
-    description: 'Décroche ton premier entretien.',
-    icon: '◍',
-    xpReward: 30,
-    threshold: 1,
-  },
-  {
-    code: 'FIVE_INTERVIEWS',
-    name: 'Habitué·e des entretiens',
-    description: 'Passe 5 entretiens.',
-    icon: '◍',
-    xpReward: 75,
-    threshold: 5,
-  },
-  {
     code: 'FIRST_OFFER',
     name: 'Première offre',
     description: 'Reçois ta première offre.',

@@ -10,13 +10,10 @@ import { EmailTemplatesService } from '../core/email-templates.service';
 import { externalUrl } from '../core/external-url';
 import {
   EMPLOYMENT_TYPE_KEYS,
-  INTERVIEW_OUTCOME_KEYS,
-  INTERVIEW_TYPE_KEYS,
   SALARY_PERIOD_KEYS,
   SOURCE_KEYS,
   WORK_MODE_KEYS,
   labelOf,
-  labelOrRaw,
 } from '../core/enums';
 import { I18nService, TranslationKey } from '../core/i18n';
 import { ApplicationDetail, ApplicationStatus, EmailTemplate } from '../core/models';
@@ -101,14 +98,6 @@ export class ApplicationDetailPage {
 
   sourceLabel(value: ApplicationDetail['source']): string {
     return labelOf(SOURCE_KEYS, value, this.t);
-  }
-
-  interviewTypeLabel(value: string): string {
-    return labelOrRaw(INTERVIEW_TYPE_KEYS, value, this.t);
-  }
-
-  interviewOutcomeLabel(value: string): string {
-    return labelOrRaw(INTERVIEW_OUTCOME_KEYS, value, this.t);
   }
 
   updateStatus(): void {
