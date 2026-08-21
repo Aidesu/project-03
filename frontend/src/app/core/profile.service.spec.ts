@@ -49,3 +49,48 @@ describe('ProfileService.exportData', () => {
     expect(await (await received).text()).toBe(payload);
   });
 });
+
+describe('ProfileService sessions', () => {
+  let service: ProfileService;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        ProfileService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    service = TestBed.inject(ProfileService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  // Under /api/auth, not /api/users/me: the refresh cookie is path-scoped to
+  // the former, and without it the server cannot flag the caller's own device.
+  it('reads sessions from the auth path', () => {
+    service.listSessions().subscribe();
+
+    const req = http.expectOne('/api/auth/sessions');
+    expect(req.request.method).toBe('GET');
+    req.flush({ sessions: [] });
+  });
+
+  it('revokes a single session by its family id', () => {
+    service.revokeSession('fam-1').subscribe();
+
+    const req = http.expectOne('/api/auth/sessions/fam-1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null);
+  });
+
+  it('revokes the other sessions without targeting an id', () => {
+    service.revokeOtherSessions().subscribe();
+
+    const req = http.expectOne('/api/auth/sessions');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({ revoked: 2 });
+  });
+});

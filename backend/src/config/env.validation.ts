@@ -80,6 +80,33 @@ export function validateEnv(
     }
   }
 
+  // How long revoked/expired refresh sessions are kept. They carry an IP and a
+  // user agent, so this is a retention limit on personal data. Capped well
+  // below the audit window: the trail is what answers questions months later.
+  const sessionRetention = config.SESSION_RETENTION_DAYS;
+  if (sessionRetention !== undefined && sessionRetention !== '') {
+    const parsed = Number(sessionRetention);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
+      errors.push(
+        'SESSION_RETENTION_DAYS must be an integer between 1 and 365.',
+      );
+    }
+  }
+
+  // Optional: only required to actually run the SIRENE registry sync, so a
+  // missing value doesn't block boot — but a value present and empty/blank
+  // almost certainly means a copy-paste mistake, so still catch that.
+  for (const key of ['SIRENE_CLIENT_ID', 'SIRENE_CLIENT_SECRET'] as const) {
+    const value = config[key];
+    if (
+      value !== undefined &&
+      typeof value === 'string' &&
+      value.trim() === ''
+    ) {
+      errors.push(`${key} is set but empty — remove it or provide a value.`);
+    }
+  }
+
   if (isProd) {
     const rawOrigins =
       typeof config.CORS_ORIGIN === 'string' ? config.CORS_ORIGIN : '';

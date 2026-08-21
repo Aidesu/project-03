@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApplicationsService } from '../core/applications.service';
+import { ClipboardService } from '../core/clipboard.service';
 import { ConfirmService } from '../core/confirm.service';
 import { ALL_STATUSES, STATUS_BADGE, STATUS_KEYS } from '../core/application-status';
 import { AuthService } from '../core/auth.service';
@@ -19,7 +20,7 @@ import {
 } from '../core/enums';
 import { I18nService, TranslationKey } from '../core/i18n';
 import { ApplicationDetail, ApplicationStatus, EmailTemplate } from '../core/models';
-import { renderTemplate, TemplateVars } from '../core/template-vars';
+import { renderTemplate, slotFor, TemplatePart, TemplateVars } from '../core/template-vars';
 
 @Component({
   selector: 'app-application-detail',
@@ -30,6 +31,7 @@ export class ApplicationDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly applications = inject(ApplicationsService);
+  private readonly clipboard = inject(ClipboardService);
   private readonly confirm = inject(ConfirmService);
   private readonly emailTemplatesApi = inject(EmailTemplatesService);
   private readonly auth = inject(AuthService);
@@ -50,7 +52,6 @@ export class ApplicationDetailPage {
   readonly deleting = signal(false);
 
   readonly templates = signal<EmailTemplate[]>([]);
-  readonly copied = signal(false);
   readonly copyError = signal<TranslationKey | null>(null);
 
   selectedStatus: ApplicationStatus = 'WISHLIST';
@@ -150,18 +151,29 @@ export class ApplicationDetailPage {
     return { subject: renderTemplate(t.subject, vars), body: renderTemplate(t.body, vars) };
   }
 
-  async copyEmail(d: ApplicationDetail): Promise<void> {
-    const p = this.preview(d);
-    if (!p) return;
+  /**
+   * Subject and body go to the clipboard separately: they are pasted into two
+   * different fields of the mail client, and the variables are already
+   * substituted at this point.
+   */
+  copySubject(d: ApplicationDetail): Promise<void> {
+    return this.copyPart(d, 'subject');
+  }
+
+  copyBody(d: ApplicationDetail): Promise<void> {
+    return this.copyPart(d, 'body');
+  }
+
+  isCopied(part: TemplatePart): boolean {
+    return this.clipboard.isCopied(slotFor(this.selectedTemplateId, part));
+  }
+
+  private async copyPart(d: ApplicationDetail, part: TemplatePart): Promise<void> {
+    const rendered = this.preview(d);
+    if (!rendered) return;
     this.copyError.set(null);
-    const text = `${this.t('common.emailSubjectPrefix', { subject: p.subject })}\n\n${p.body}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      this.copied.set(true);
-      setTimeout(() => this.copied.set(false), 2000);
-    } catch {
-      this.copyError.set('applicationDetail.email.copyFailed');
-    }
+    const ok = await this.clipboard.copy(rendered[part], slotFor(this.selectedTemplateId, part));
+    if (!ok) this.copyError.set('applicationDetail.email.copyFailed');
   }
 
   private varsFor(d: ApplicationDetail): TemplateVars {

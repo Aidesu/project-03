@@ -165,17 +165,8 @@
           @for (tpl of group.items; track tpl.id) {
             <li class="rounded-2xl border border-slate-100 bg-surface p-4 shadow-sm">
               <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="font-semibold text-slate-800">{{ tpl.name }}</p>
-                  <p class="mt-0.5 truncate text-sm text-slate-500">{{ tpl.subject }}</p>
-                </div>
+                <p class="min-w-0 font-semibold text-slate-800">{{ tpl.name }}</p>
                 <div class="flex shrink-0 items-center gap-2">
-                  <button
-                    (click)="copy(tpl)"
-                    class="btn btn--secondary btn--sm"
-                  >
-                    {{ copiedId() === tpl.id ? t('common.copied') : t('common.copy') }}
-                  </button>
                   <button
                     (click)="openEdit(tpl)"
                     class="btn btn--secondary btn--sm"
@@ -191,9 +182,32 @@
                   </button>
                 </div>
               </div>
-              <p class="mt-2 whitespace-pre-line text-xs leading-relaxed text-slate-400">{{
-                tpl.body
-              }}</p>
+
+              <!-- Each half carries its own copy button: a mail client has two
+                   fields, so a single combined block gets split by hand. -->
+              <div
+                class="mt-3 flex flex-wrap items-start justify-between gap-2 border-t border-slate-100 pt-3"
+              >
+                <p class="min-w-0 flex-1 truncate text-sm text-slate-500">{{ tpl.subject }}</p>
+                <button
+                  (click)="copySubject(tpl)"
+                  class="btn btn--secondary btn--sm shrink-0"
+                >
+                  {{ isCopied(tpl, 'subject') ? t('common.copied') : t('common.copySubject') }}
+                </button>
+              </div>
+
+              <div class="mt-2 flex flex-wrap items-start justify-between gap-2">
+                <p
+                  class="min-w-0 flex-1 whitespace-pre-line text-xs leading-relaxed text-slate-400"
+                >{{ tpl.body }}</p>
+                <button
+                  (click)="copyBody(tpl)"
+                  class="btn btn--secondary btn--sm shrink-0"
+                >
+                  {{ isCopied(tpl, 'body') ? t('common.copied') : t('common.copyMessage') }}
+                </button>
+              </div>
             </li>
           }
         </ul>

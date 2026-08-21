@@ -14,6 +14,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
+    "registry:backfill": "ts-node -r tsconfig-paths/register src/company-registry/scripts/backfill.ts",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:docker": "tsc -p tsconfig.build.json && concurrently -k -n tsc,app -c blue,green \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"nodemon --watch dist --delay 1 dist/src/main.js\"",

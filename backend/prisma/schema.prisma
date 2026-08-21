@@ -37,6 +37,7 @@ enum AuditAction {
   ACCOUNT_DELETED
   REFRESH_TOKEN_REUSE_DETECTED
   DATA_EXPORTED
+  SESSION_REVOKED
 }
 
 enum AuditOutcome {
@@ -222,6 +223,12 @@ model RefreshSession {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String // sha256 of the opaque refresh token — the raw token is never stored
   familyId  String // rotation family; reusing a revoked token revokes the whole family
+  // When the family was opened, carried on every row of it. A device that stays
+  // signed in rotates every 15 minutes, so the row's own createdAt says when it
+  // last refreshed, not since when the user has been connected. Denormalised
+  // rather than derived from min(createdAt) so the answer survives the
+  // retention purge of the family's older rows.
+  familyCreatedAt DateTime @default(now())
   expiresAt DateTime
   revokedAt DateTime?
   userAgent String?
@@ -230,6 +237,8 @@ model RefreshSession {
 
   @@index([userId])
   @@index([familyId])
+  // Listing a user's active sessions, and the retention purge's dead-row scan.
+  @@index([userId, revokedAt, expiresAt])
 }
 
 // Single-use, short-lived tokens sent by e-mail: password recovery and address
@@ -343,6 +352,46 @@ model Contact {
 
   @@index([userId])
   @@index([companyId])
+}
+
+// Shared, read-only reference data pulled from a public company registry
+// (SIRENE/INSEE for France). Not tenant-scoped: this is not user data, it's
+// a lookup table every authenticated user can search. Rows are only ever
+// written by CompanyRegistrySyncService — never mutated through the API.
+model CompanyRegistryEntry {
+  id              String    @id @default(uuid())
+  siret           String    @unique // établissement, 14 digits
+  siren           String // parent legal entity (unité légale), 9 digits
+  name            String? // denomination, or name for a personne physique
+  naf             String? // primary activity code (APE/NAF)
+  addressLine     String?
+  postalCode      String?
+  commune         String?
+  departmentCode  String?
+  regionCode      String?
+  status          String // active / ceased (etatAdministratifEtablissement)
+  // INSEE's own "diffusion partielle" opt-out flag. False means the source
+  // entity asked not to be publicly disclosed — never store/serve fields for
+  // these rows beyond what INSEE itself would publicly disclose.
+  isDiffusible    Boolean   @default(true)
+  sourceUpdatedAt DateTime? // dateDerniereMiseAJour from SIRENE
+  syncedAt        DateTime  @default(now())
+
+  @@index([departmentCode])
+  @@index([regionCode])
+  @@index([name])
+}
+
+// Singleton-per-source bookkeeping row for CompanyRegistrySyncService, so a
+// crashed full sync resumes from its cursor instead of restarting, and the
+// incremental cron knows the last successful watermark.
+model RegistrySyncState {
+  id                    String    @id // fixed key, e.g. "sirene-fr"
+  lastCursor            String?
+  lastFullSyncAt        DateTime?
+  lastIncrementalSyncAt DateTime?
+  status                String    @default("idle") // idle / running / error
+  lastError             String?
 }
 
 model JobApplication {

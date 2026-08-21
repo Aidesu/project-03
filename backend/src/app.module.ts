@@ -12,6 +12,7 @@ import { CommonModule } from './common/common.module';
 import { CorrelationIdMiddleware } from './common/correlation-id.middleware';
 import { throttlerConfig } from './common/throttler.config';
 import { CompaniesModule } from './companies/companies.module';
+import { CompanyRegistryModule } from './company-registry/company-registry.module';
 import { validateEnv } from './config/env.validation';
 import { ContactsModule } from './contacts/contacts.module';
 import { EmailTemplatesModule } from './email-templates/email-templates.module';
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     GamificationModule,
     ApplicationsModule,
     CompaniesModule,
+    CompanyRegistryModule,
     ContactsModule,
     InterviewsModule,
     RemindersModule,

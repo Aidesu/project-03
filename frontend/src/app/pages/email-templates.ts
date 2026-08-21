@@ -1,11 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmailTemplateInput, EmailTemplatesService } from '../core/email-templates.service';
+import { ClipboardService } from '../core/clipboard.service';
 import { ConfirmService } from '../core/confirm.service';
 import { EMAIL_TEMPLATE_CATEGORY_KEYS, optionsFrom } from '../core/enums';
 import { I18nService, TranslationKey } from '../core/i18n';
 import { EmailTemplate, EmailTemplateCategory } from '../core/models';
-import { TEMPLATE_VARIABLE_HINTS } from '../core/template-vars';
+import { TEMPLATE_VARIABLE_HINTS, TemplatePart, slotFor } from '../core/template-vars';
 
 @Component({
   selector: 'app-email-templates',
@@ -15,6 +16,7 @@ import { TEMPLATE_VARIABLE_HINTS } from '../core/template-vars';
 export class EmailTemplates {
   private readonly fb = inject(FormBuilder);
   private readonly templatesApi = inject(EmailTemplatesService);
+  private readonly clipboard = inject(ClipboardService);
   private readonly confirm = inject(ConfirmService);
   private readonly i18n = inject(I18nService);
 
@@ -46,7 +48,6 @@ export class EmailTemplates {
   readonly saving = signal(false);
   readonly formError = signal<TranslationKey | null>(null);
   readonly deletingId = signal<string | null>(null);
-  readonly copiedId = signal<string | null>(null);
   readonly copyError = signal<TranslationKey | null>(null);
   readonly showForm = signal(false);
 
@@ -69,8 +70,6 @@ export class EmailTemplates {
     subject: this.fb.nonNullable.control('', [Validators.required, Validators.maxLength(200)]),
     body: this.fb.nonNullable.control('', [Validators.required, Validators.maxLength(5000)]),
   });
-
-  private copyResetHandle: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.load();
@@ -168,18 +167,27 @@ export class EmailTemplates {
     });
   }
 
-  /** Copies "subject + body" as one block — plain text, so nothing to sanitize. */
-  async copy(t: EmailTemplate): Promise<void> {
+  /**
+   * Subject and body are copied separately because that is how they are pasted:
+   * a mail client has two fields, and one combined block has to be split by
+   * hand every time.
+   */
+  copySubject(t: EmailTemplate): Promise<void> {
+    return this.copyPart(t, 'subject');
+  }
+
+  copyBody(t: EmailTemplate): Promise<void> {
+    return this.copyPart(t, 'body');
+  }
+
+  isCopied(t: EmailTemplate, part: TemplatePart): boolean {
+    return this.clipboard.isCopied(slotFor(t.id, part));
+  }
+
+  /** Plain text on the way out, so there is no sink to encode for. */
+  private async copyPart(t: EmailTemplate, part: TemplatePart): Promise<void> {
     this.copyError.set(null);
-    const subjectLine = this.t('common.emailSubjectPrefix', { subject: t.subject });
-    const text = `${subjectLine}\n\n${t.body}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      this.copiedId.set(t.id);
-      if (this.copyResetHandle) clearTimeout(this.copyResetHandle);
-      this.copyResetHandle = setTimeout(() => this.copiedId.set(null), 2000);
-    } catch {
-      this.copyError.set('emailTemplates.copyError');
-    }
+    const ok = await this.clipboard.copy(t[part], slotFor(t.id, part));
+    if (!ok) this.copyError.set('emailTemplates.copyError');
   }
 }

@@ -21,11 +21,11 @@ export const es: Record<TranslationKey, string> = {
   'common.next': 'Siguiente',
   'common.pageOf': 'Página {page} / {pageCount}',
   'common.range': '{from}–{to} de {total}',
-  'common.copy': 'Copiar',
+  'common.copySubject': 'Copiar el asunto',
+  'common.copyMessage': 'Copiar el mensaje',
   'common.copied': 'Copiado ✓',
   'common.optional': '(opcional)',
   'common.notSet': 'Sin especificar',
-  'common.emailSubjectPrefix': 'Asunto: {subject}',
   'common.applicationsCount':
     '{count, plural, one {# candidatura} other {# candidaturas}}',
 
@@ -533,6 +533,28 @@ export const es: Record<TranslationKey, string> = {
   'profile.privacy.error': 'No se pudo preparar tu exportación. Inténtalo de nuevo.',
   'profile.privacy.tooMany':
     'Demasiadas exportaciones solicitadas. Espera un momento antes de volver a intentarlo.',
+  'profile.sessions.title': 'Sesiones activas',
+  'profile.sessions.body':
+    'Los dispositivos conectados actualmente a su cuenta. Si no reconoce alguno, ciérrelo — tendrá que volver a iniciar sesión.',
+  'profile.sessions.loading': 'Cargando sus sesiones…',
+  'profile.sessions.empty': 'Ningún otro dispositivo está conectado.',
+  'profile.sessions.currentBadge': 'Este dispositivo',
+  'profile.sessions.unknownDevice': 'Dispositivo desconocido',
+  'profile.sessions.signedInAt': 'Conectado el:',
+  'profile.sessions.lastSeenAt': 'Última actividad:',
+  'profile.sessions.ip': 'IP:',
+  'profile.sessions.revoke': 'Cerrar sesión',
+  'profile.sessions.revokeAll':
+    '{count, plural, one {Cerrar # dispositivo más} other {Cerrar los # dispositivos restantes}}',
+  'profile.sessions.revokeConfirmTitle': '¿Cerrar la sesión de este dispositivo?',
+  'profile.sessions.revokeConfirmBody':
+    '{device} se desconectará de inmediato y tendrá que volver a iniciar sesión. Sus datos no se ven afectados.',
+  'profile.sessions.revokeAllConfirmTitle': '¿Cerrar todos los demás dispositivos?',
+  'profile.sessions.revokeAllConfirmBody':
+    '{count, plural, one {# dispositivo más se desconectará de inmediato.} other {# dispositivos más se desconectarán de inmediato.}} Este dispositivo permanece conectado y sus datos no se ven afectados.',
+  'profile.sessions.loadError': 'No se pudieron cargar sus sesiones.',
+  'profile.sessions.revokeError':
+    'No se pudo cerrar esa sesión. Inténtelo de nuevo.',
   'profile.danger.title': 'Zona de peligro',
   'profile.danger.body':
     'Esta acción elimina definitivamente tu cuenta y todos los datos asociados (candidaturas, empresas, documentos, plantillas de correo, progreso). Es irreversible.',

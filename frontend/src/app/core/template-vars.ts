@@ -25,6 +25,18 @@ export const TEMPLATE_VARIABLE_HINTS = [
   { token: '{{mon_nom}}', descriptionKey: 'templateVar.mon_nom' },
 ] satisfies { token: string; descriptionKey: TranslationKey }[];
 
+/** The two halves of a template, copied one at a time. */
+export type TemplatePart = 'subject' | 'body';
+
+/**
+ * Clipboard slot for one half of one template. Carries the template id so the
+ * "Copied ✓" confirmation lands on the button that was clicked, and so two
+ * pages copying a subject cannot confirm on each other's button.
+ */
+export function slotFor(templateId: string, part: TemplatePart): string {
+  return `template:${templateId}:${part}`;
+}
+
 const KNOWN_KEYS = new Set<keyof TemplateVars>([
   'poste',
   'entreprise',
